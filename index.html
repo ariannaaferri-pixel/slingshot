@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slingshot Challenge</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: a mission-control console. Mode switch, flight view, controls, then data (Investigate) or scoreboard (Challenge). Single dark theme on purpose. */
+:root{
+  --bg:#070b16; --panel:#0f1628; --line:#24314f; --ink:#e8eefb; --dim:#93a1c0;
+  --planet:#3fa7d6; --trail:#f2a541; --good:#5fd39a; --bad:#ff8a6b; --gold:#ffd166;
+  --display:"Chakra Petch", "Trebuchet MS", sans-serif;
+  --body:"Atkinson Hyperlegible", Verdana, sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-size:16px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,4vw,38px);letter-spacing:.02em;margin:0;line-height:1.05}
+.kicker{font-family:var(--display);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--planet);margin:0 0 4px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font:inherit;font-size:15px;font-weight:700;color:var(--dim);background:transparent;border:2px solid var(--line);border-radius:6px;padding:8px 14px;cursor:pointer}
+.tab[aria-pressed="true"]{color:var(--bg);background:var(--trail);border-color:var(--trail)}
+.tab:focus-visible,.btn:focus-visible,input[type=range]:focus-visible{outline:3px solid var(--planet);outline-offset:2px}
+.mission{background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center}
+.mission b{font-family:var(--display);font-size:20px;letter-spacing:.02em}
+.mission .txt{color:var(--dim);flex:1;min-width:240px}
+.target{font-family:var(--display);font-size:clamp(22px,3.4vw,30px);font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.mstory{flex:1;min-width:260px}.mstory p{margin:4px 0 0;color:var(--dim)}
+.sets{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sets span{color:var(--dim);font-size:14px}
+.view{position:relative;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:#050812}
+canvas{display:block;width:100%;height:auto;max-width:100%}
+#c{aspect-ratio:1000/600}
+.hud{position:absolute;top:10px;right:12px;font-family:var(--display);text-align:right;pointer-events:none}
+.hud .lab{font-size:12px;letter-spacing:.14em;color:var(--dim)}
+.hud .spd{font-size:clamp(22px,4vw,38px);font-weight:700;font-variant-numeric:tabular-nums;color:var(--trail)}
+.hud .tgt{font-size:clamp(14px,2vw,18px);color:var(--gold);font-variant-numeric:tabular-nums}
+.legend{position:absolute;left:12px;bottom:10px;font-size:13px;color:var(--dim);pointer-events:none}
+.predict{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.predbtns{display:flex;flex-wrap:wrap;gap:6px}
+.tab.pred[aria-pressed="true"]{color:var(--bg);background:var(--planet);border-color:var(--planet)}
+.controls{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center}
+.aim{display:flex;flex-direction:column;gap:4px;min-width:0}
+.aimrow{display:flex;align-items:center;gap:8px}
+.aim label{font-weight:700}
+.posval{font-family:var(--display);font-size:20px;color:var(--trail);font-variant-numeric:tabular-nums}
+.aim .ends{display:flex;justify-content:space-between;font-size:13px;color:var(--dim)}
+input[type=range]{flex:1;min-width:0;accent-color:var(--trail);height:28px}
+.nudge{font-family:var(--display);font-weight:700;font-size:15px;color:var(--trail);background:transparent;border:2px solid var(--line);border-radius:6px;padding:4px 8px;cursor:pointer;font-variant-numeric:tabular-nums}
+.btn{font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:.06em;border-radius:6px;padding:12px 22px;cursor:pointer;border:2px solid var(--trail)}
+.btn.go{background:var(--trail);color:var(--bg)}
+.btn.ghost{background:transparent;color:var(--trail)}
+.btn:disabled,.nudge:disabled{opacity:.45;cursor:not-allowed}
+.btn.small{font-size:14px;padding:7px 14px}
+.btn.small[aria-pressed="true"]{background:var(--trail);color:var(--bg)}
+.result{background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:14px 16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 2fr;gap:12px;align-items:center}
+.stat .lab{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.stat .val{font-family:var(--display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.up{color:var(--good)} .down{color:var(--bad)} .gold{color:var(--gold)}
+.verdict{min-width:0}
+.verdict p{margin:0}
+.verdict .big{font-family:var(--display);font-size:20px;font-weight:700}
+.right{color:var(--good);font-weight:700}
+.wrong{color:var(--bad);font-weight:700}
+.panelhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.panelhead h2{font-family:var(--display);font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.copied{margin:0 0 8px;font-size:14px;color:var(--good);min-height:1em}
+.graphbox{border:2px solid var(--line);border-radius:8px;margin-bottom:12px;background:#050812}
+#gc{aspect-ratio:1000/420}
+.tablebox{overflow-x:auto;border:2px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;min-width:560px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);background:var(--panel)}
+tbody tr:last-child td{border-bottom:none}
+.empty td{color:var(--dim)}
+.total{display:flex;flex-wrap:wrap;gap:12px 28px;align-items:baseline;background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:12px}
+.total .score{font-family:var(--display);font-size:clamp(30px,5vw,44px);font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums}
+.total .rank{font-family:var(--display);font-size:20px;font-weight:700}
+.total .best{color:var(--dim)}
+.rules{color:var(--dim);font-size:14px;margin:8px 0 0}
+.note{font-size:13px;color:var(--dim);margin:0}
+@media (max-width:720px){
+  .controls{grid-template-columns:1fr 1fr}
+  .aim{grid-column:1/-1}
+  .result{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .verdict{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div>
+      <p class="kicker">Gravity assist</p>
+      <h1>Slingshot Challenge</h1>
+    </div>
+    <div class="tabs" role="group" aria-label="Choose a mode">
+      <button class="tab mode" id="mInv" data-m="inv" aria-pressed="true">1 · Investigate</button>
+      <button class="tab mode" id="mChal" data-m="chal" aria-pressed="false">2 · Challenge</button>
+    </div>
+  </header>
+
+  <div class="mission" id="invCard">
+    <b>Investigate</b>
+    <span class="txt">Launch from different positions. Before each flight, predict what will happen to the spacecraft's speed. Find the pattern.</span>
+  </div>
+  <div class="mission" id="chalCard" hidden>
+    <div class="mstory"><b id="roundLab">Mission 1 of 3</b><p class="txt" id="storyLab"></p></div>
+    <div class="target" id="targetLab">Target: 21.0 km/s</div>
+    <div class="sets"><span>Challenge set:</span>
+      <button class="tab set" data-s="0" aria-pressed="true">A</button>
+      <button class="tab set" data-s="1" aria-pressed="false">B</button>
+      <button class="tab set" data-s="2" aria-pressed="false">C</button>
+    </div>
+  </div>
+
+  <div class="view">
+    <canvas id="c" width="1000" height="600" aria-label="Flight view: a planet moves along its orbit while your spacecraft flies upward past it"></canvas>
+    <div class="hud"><div class="lab">SPACECRAFT SPEED</div><div class="spd" id="hudSpd">15.0 km/s</div><div class="tgt" id="hudTgt" hidden></div></div>
+    <div class="legend" id="legend">Speeds scaled for this model · No fuel used after launch</div>
+  </div>
+
+  <div class="predict" id="predict" role="group" aria-labelledby="predLab">
+    <span id="predLab"><b>Your prediction:</b> what will happen to the speed?</span>
+    <div class="predbtns">
+      <button class="tab pred" data-p="up" aria-pressed="false">Speed up</button>
+      <button class="tab pred" data-p="down" aria-pressed="false">Slow down</button>
+      <button class="tab pred" data-p="same" aria-pressed="false">Stay about the same</button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="aim">
+      <label for="aim">Launch position: <output id="aimOut" class="posval">−4</output></label>
+      <div class="aimrow">
+        <button class="nudge" id="minus" aria-label="Move launch position left by 0.1">−0.1</button>
+        <input type="range" id="aim" min="-8" max="8" step="0.1" value="-4">
+        <button class="nudge" id="plus" aria-label="Move launch position right by 0.1">+0.1</button>
+      </div>
+      <div class="ends"><span>−8 (left)</span><span>0</span><span>+8 (right)</span></div>
+    </div>
+    <button class="btn go" id="launch">LAUNCH</button>
+    <button class="btn ghost" id="reset">CLEAR</button>
+  </div>
+
+  <div class="result">
+    <div class="stat"><div class="lab" id="s1lab">Speed before</div><div class="val" id="s1">15.0</div></div>
+    <div class="stat"><div class="lab">Speed after</div><div class="val" id="after">–</div></div>
+    <div class="stat"><div class="lab" id="s3lab">Change</div><div class="val" id="chg">–</div></div>
+    <div class="verdict" aria-live="polite"><p class="big" id="vBig">Ready for launch</p><p id="vSmall">Pick a launch position and make a prediction, then press Launch.</p></div>
+  </div>
+
+  <section id="invPanel">
+    <div class="panelhead">
+      <h2>Flight data</h2>
+      <div class="btnrow">
+        <button class="btn small ghost" id="graphBtn" aria-pressed="false">Show graph</button>
+        <button class="btn small ghost" id="copyBtn">Copy data</button>
+      </div>
+    </div>
+    <p class="copied" id="copied" aria-live="polite"></p>
+    <div class="graphbox" id="graphBox" hidden>
+      <canvas id="gc" width="1000" height="420" aria-label="Graph of change in speed versus launch position"></canvas>
+    </div>
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>Trial</th><th>Launch position</th><th>Prediction</th><th>Passed the planet</th><th>Closest approach (planet widths)</th><th>Speed after (km/s)</th><th>Change in speed (km/s)</th></tr></thead>
+        <tbody id="rows"><tr class="empty"><td colspan="7">Your flights will show up here.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="chalPanel" hidden>
+    <div class="panelhead"><h2>Scoreboard</h2><div class="btnrow"><button class="btn small ghost" id="newGame">New game</button></div></div>
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>Mission</th><th>Target (km/s)</th><th>Launch position</th><th>Your speed (km/s)</th><th>Off by</th><th>Points</th></tr></thead>
+        <tbody id="srows"></tbody>
+      </table>
+    </div>
+    <div class="total">
+      <div><div class="stat"><div class="lab">Total score</div></div><span class="score" id="total">0</span><span class="best"> / 300</span></div>
+      <div class="rank" id="rank"></div>
+      <div class="best" id="best"></div>
+    </div>
+    <p class="rules">One launch per mission. Points: 100 for a perfect flight (within 0.1 km/s). You lose 3 points for every 0.1 km/s you are off. A crash scores 0. Everyone on the same challenge set gets the same targets, so you can compare scores.</p>
+  </section>
+
+  <p class="note">Simplified model: only the planet's gravity acts on the spacecraft during the flyby, speeds are measured compared to the Sun, and the planet's own motion is not visibly changed. In real flybys the planet slows by an amount far too tiny to measure.</p>
+</div>
+
+<script>
+(function(){
+const W=1000,H=600, GM=260, VP=1.6, V0=2.6, K=15/V0, PY=300, DT=0.25, R=22, SY=1100, RO=800, TH0=-VP*(PY/V0)/RO;
+const PP=th=>[500+RO*Math.sin(th), SY-RO*Math.cos(th)];
+const cv=document.getElementById('c'), g=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+const SETS=[[21.0,10.0,17.5],[22.0,11.5,19.0],[20.5,9.5,18.5]];
+const RANKS=[[290,'Mission Director'],[240,'Flight Director'],[180,'Navigator'],[90,'Co-pilot'],[0,'Cadet']];
+const MISSIONS=[
+ {name:'Voyager 1 at Jupiter', short:'Voyager 1', planet:'jupiter', goal:'speed up',
+  story:'March 1979. Voyager 1 needed a huge boost to reach Saturn and then leave the solar system. Fly past Jupiter and speed up to the target.'},
+ {name:'Parker Solar Probe at Venus', short:'Parker', planet:'venus', goal:'slow down',
+  story:'2018 to 2024. Parker Solar Probe had to lose speed so it could fall closer to the Sun. Fly past Venus and slow down to the target.'},
+ {name:'Rosetta at Earth', short:'Rosetta', planet:'earth', goal:'speed up',
+  story:'2005 to 2009. No rocket could send Rosetta straight to comet 67P, so it swung past Earth three times to build up speed. Fly past Earth and speed up to the target.'}
+];
+const NM=3;
+const PN={up:'speed up',down:'slow down',same:'stay about the same'};
+let mode='inv', pred=null, flights=[], trails=[], cur=null, raf=0, n=0;
+let setI=0, round=0, scores=[];
+let s=7; const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647};
+const stars=Array.from({length:140},()=>[rnd()*W,rnd()*H,rnd()*1.4+0.3,rnd()*0.6+0.2]);
+const AX=v=>500+44*v;
+const pos=()=>Math.round(+$('aim').value*10)/10;
+const fmtPos=v=>{const a=Math.abs(v); const t=Number.isInteger(a)?String(a):a.toFixed(1); return v>0?'+'+t:v<0?'−'+t:'0';};
+const flying=()=>cur&&cur.state==='fly';
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* ---------- modes ---------- */
+function setMode(m){
+  if(flying()) return;
+  mode=m;
+  document.querySelectorAll('.mode').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===m)));
+  const inv=m==='inv';
+  $('invCard').hidden=!inv; $('invPanel').hidden=!inv; $('predict').hidden=!inv;
+  $('chalCard').hidden=inv; $('chalPanel').hidden=inv; $('hudTgt').hidden=inv;
+  cur=null; trails=[];
+  if(inv){
+    $('s1lab').textContent='Speed before'; $('s1').textContent='15.0'; $('s3lab').textContent='Change';
+    setPred(null); clearResult('Pick a launch position and make a prediction, then press Launch.');
+  } else { newGame(); }
+  draw();
+}
+document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.m)));
+function clearResult(msg){
+  $('after').textContent='–'; $('chg').textContent='–'; $('chg').className='val';
+  $('vBig').textContent='Ready for launch'; $('vBig').className='big'; $('vSmall').textContent=msg;
+  $('hudSpd').textContent='15.0 km/s';
+}
+
+/* ---------- prediction (Investigate) ---------- */
+function setPred(p){ pred=p; document.querySelectorAll('.pred').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.p===p))); updateLaunch(); }
+document.querySelectorAll('.pred').forEach(b=>b.addEventListener('click',()=>{ if(!flying()) setPred(b.dataset.p); }));
+function updateLaunch(){
+  const ok = !flying() && (mode==='inv' ? !!pred : round<NM);
+  $('launch').disabled=!ok;
+}
+
+/* ---------- challenge ---------- */
+function newGame(){
+  round=0; scores=[]; trails=[]; cur=null;
+  document.querySelectorAll('.set').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.s===setI)));
+  renderScores(); showRound();
+  clearResult('Choose a launch position. You get one launch per mission.');
+  $('s1lab').textContent='Target'; $('s1').textContent=SETS[setI][0].toFixed(1); $('s3lab').textContent='Points';
+  updateLaunch(); draw();
+}
+function showRound(){
+  const i=Math.min(round,NM-1), t=SETS[setI][i], M=MISSIONS[i];
+  $('roundLab').textContent= round<NM ? 'Mission '+(round+1)+' of 3 · '+M.name : 'All missions complete';
+  $('storyLab').textContent= round<NM ? M.story : 'Final score: '+total()+' / 300. Press New game to try again, or switch challenge sets.';
+  $('targetLab').textContent= round<NM ? 'Target: '+t.toFixed(1)+' km/s' : 'Score: '+total();
+  $('hudTgt').textContent= round<NM ? 'TARGET '+t.toFixed(1)+' km/s' : '';
+  if(round<NM) $('s1').textContent=t.toFixed(1);
+}
+document.querySelectorAll('.set').forEach(b=>b.addEventListener('click',()=>{ if(flying()) return; setI=+b.dataset.s; newGame(); }));
+$('newGame').addEventListener('click',()=>{ if(!flying()) newGame(); });
+const total=()=>scores.reduce((a,r)=>a+r.pts,0);
+function renderScores(){
+  const T=SETS[setI];
+  $('srows').innerHTML=T.map((t,i)=>{
+    const r=scores[i], nm=MISSIONS[i].short;
+    if(!r) return '<tr class="empty"><td>'+nm+'</td><td>'+t.toFixed(1)+'</td><td colspan="4">'+(i===round?'Your turn':'–')+'</td></tr>';
+    if(r.crash) return '<tr><td>'+nm+'</td><td>'+t.toFixed(1)+'</td><td>'+fmtPos(r.p)+'</td><td class="down">Crashed</td><td>–</td><td>0</td></tr>';
+    return '<tr><td>'+nm+'</td><td>'+t.toFixed(1)+'</td><td>'+fmtPos(r.p)+'</td><td>'+r.v.toFixed(2)+'</td><td>'+r.err.toFixed(2)+'</td><td class="'+(r.pts===100?'gold':'')+'">'+r.pts+(r.pts===100?' ★':'')+'</td></tr>';
+  }).join('');
+  const tot=total(); $('total').textContent=tot;
+  const key='slingBest'+setI, best=+(store.get(key)||0);
+  if(round>=NM){
+    const rk=RANKS.find(x=>tot>=x[0])[1]; $('rank').textContent='Rank: '+rk;
+    if(tot>best) store.set(key,String(tot));
+  } else $('rank').textContent='';
+  const b2=Math.max(best, round>=NM?tot:0);
+  $('best').textContent=b2? 'Your best on set '+'ABC'[setI]+': '+b2 : '';
+}
+
+/* ---------- flight ---------- */
+function start(){
+  if($('launch').disabled) return;
+  const ax=AX(pos());
+  cur={x:ax,y:H,vx:0,vy:-V0,th:TH0,minD:1e9,side:0,trail:[[ax,H]],state:'fly',look:curLook()};
+  $('aim').disabled=true; $('minus').disabled=true; $('plus').disabled=true; updateLaunch();
+  $('after').textContent='…'; $('chg').textContent='…'; $('chg').className='val';
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(tick);
+}
+function step(c){
+  const [px,py]=PP(c.th), dx=px-c.x, dy=py-c.y, r=Math.hypot(dx,dy);
+  if(r<c.minD){c.minD=r;c.side=c.x<px?-1:1;}
+  if(r<R+2){c.state='crash';return;}
+  const a=GM/(r*r); c.vx+=a*dx/r*DT; c.vy+=a*dy/r*DT;
+  c.x+=c.vx*DT; c.y+=c.vy*DT; c.th+=VP*DT/RO;
+  if(c.y<-40||c.y>H+60||c.x<-60||c.x>W+60) c.state='done';
+}
+function tick(){
+  for(let i=0;i<10&&cur.state==='fly';i++){ step(cur); if(i%2===0) cur.trail.push([cur.x,cur.y]); }
+  draw();
+  $('hudSpd').textContent=(Math.hypot(cur.vx,cur.vy)*K).toFixed(1)+' km/s';
+  if(cur.state==='fly'){ raf=requestAnimationFrame(tick); } else finish();
+}
+function finish(){
+  $('aim').disabled=false; $('minus').disabled=false; $('plus').disabled=false;
+  const crash=cur.state==='crash';
+  const v=Math.hypot(cur.vx,cur.vy)*K, d=v-15;
+  trails.push({pts:cur.trail}); if(trails.length>5) trails.shift();
+  if(mode==='chal') finishChallenge(crash,v); else finishInvestigate(crash,v,d);
+  updateLaunch(); draw();
+}
+function finishChallenge(crash,v){
+  const t=SETS[setI][round];
+  let r;
+  if(crash){ r={p:pos(),crash:true,pts:0}; }
+  else { const err=Math.abs(v-t); r={p:pos(),v,err,pts: err<0.1?100:Math.max(0,Math.round(100-30*err))}; }
+  scores[round]=r; round++;
+  if(crash){
+    $('after').textContent='–'; $('chg').textContent='0'; $('chg').className='val down';
+    $('vBig').textContent='Crashed! 0 points'; $('vBig').className='big down';
+    $('vSmall').textContent='Too close to the planet. Careful on the next round.';
+  } else {
+    $('after').textContent=v.toFixed(2);
+    $('chg').textContent=String(r.pts); $('chg').className='val '+(r.pts===100?'gold':r.pts>=70?'up':'down');
+    $('vBig').textContent= r.pts===100?'★ PERFECT! 100 points':r.pts>=85?'So close! '+r.pts+' points':r.pts>=60?'Not bad. '+r.pts+' points':r.pts+' points';
+    $('vBig').className='big '+(r.pts===100?'gold':r.pts>=60?'up':'down');
+    $('vSmall').textContent='You needed '+t.toFixed(1)+' km/s and left at '+v.toFixed(2)+' km/s. '+(v<t?'You were too slow.':'You were too fast.');
+  }
+  if(round>=NM){
+    const tot=total();
+    $('vSmall').textContent+=' All missions complete: '+tot+' / 300.';
+  }
+  showRound(); renderScores();
+}
+function finishInvestigate(crash,v,d){
+  const actual=d>1?'up':d<-1?'down':'same', myPred=pred, hit=!crash&&myPred===actual;
+  const side=cur.minD>280?'Missed it':(cur.side<0?'Behind':'In front');
+  n++; flights.unshift({n,p:pos(),pr:myPred,hit,side:crash?'Crashed':side,cl:crash?null:cur.minD/(2*R),v:crash?null:v,d:crash?null:d});
+  if(flights.length>60) flights.pop();
+  setPred(null); renderLog(); drawGraph();
+  if(crash){
+    $('after').textContent='–'; $('chg').textContent='–';
+    $('vBig').textContent='Crashed into the planet'; $('vBig').className='big down';
+    $('vSmall').textContent='You crashed, so no prediction counts for this flight. The spacecraft passed too close and the planet’s gravity pulled it in. In your table, write “crashed.”';
+    return;
+  }
+  $('after').textContent=v.toFixed(1);
+  $('chg').textContent=(d>=0?'+':'')+d.toFixed(1); $('chg').className='val '+(d>0.2?'up':d<-0.2?'down':'');
+  $('vBig').textContent=actual==='up'?'Sped up':actual==='down'?'Slowed down':'Almost no change';
+  $('vBig').className='big '+(actual==='up'?'up':actual==='down'?'down':'');
+  const sideTxt=side==='Behind'?'You passed behind the planet (the side it is moving away from).':side==='In front'?'You passed in front of the planet (the side it is moving toward).':'You stayed far from the planet.';
+  const fb=hit?'<span class="right">✓ Your prediction was right!</span>':'<span class="wrong">✗ Not quite.</span> You predicted it would '+PN[myPred]+', but it '+(actual==='up'?'sped up':actual==='down'?'slowed down':'stayed about the same')+'.';
+  $('vSmall').innerHTML=fb+' '+sideTxt;
+}
+function renderLog(){
+  if(!flights.length){ $('rows').innerHTML='<tr class="empty"><td colspan="7">Your flights will show up here.</td></tr>'; return; }
+  $('rows').innerHTML=flights.map(f=>'<tr><td>'+f.n+'</td><td>'+fmtPos(f.p)+'</td><td class="'+(f.d==null?'':f.hit?'up':'down')+'">'+(f.d==null?'Crashed':(f.hit?'✓ ':'✗ ')+PN[f.pr])+'</td><td>'+f.side+'</td><td>'+(f.cl==null?'Crashed':f.cl.toFixed(1))+'</td><td>'+(f.v==null?'–':f.v.toFixed(1))+'</td><td class="'+(f.d==null?'':f.d>0.2?'up':f.d<-0.2?'down':'')+'">'+(f.d==null?'–':(f.d>=0?'+':'')+f.d.toFixed(1))+'</td></tr>').join('');
+}
+
+/* ---------- graph + copy (Investigate) ---------- */
+const gc=$('gc'), gg=gc.getContext('2d');
+function drawGraph(){
+  if($('graphBox').hidden) return;
+  const Wg=1000,Hg=420, l=90,r=30,t=30,b=70, x=v=>l+(v+8)/16*(Wg-l-r), y=v=>t+(10-v)/20*(Hg-t-b);
+  gg.fillStyle='#050812'; gg.fillRect(0,0,Wg,Hg);
+  gg.font='18px Atkinson Hyperlegible, Verdana, sans-serif'; gg.textAlign='center'; gg.textBaseline='top';
+  for(let v=-8;v<=8;v+=2){ gg.strokeStyle='rgba(147,161,192,.15)'; gg.lineWidth=1; gg.beginPath(); gg.moveTo(x(v),t); gg.lineTo(x(v),Hg-b); gg.stroke(); gg.fillStyle='#93a1c0'; gg.fillText(fmtPos(v),x(v),Hg-b+8); }
+  gg.textAlign='right'; gg.textBaseline='middle';
+  for(let v=-10;v<=10;v+=5){ gg.strokeStyle=v===0?'rgba(232,238,251,.55)':'rgba(147,161,192,.15)'; gg.lineWidth=v===0?2:1; gg.beginPath(); gg.moveTo(l,y(v)); gg.lineTo(Wg-r,y(v)); gg.stroke(); gg.fillStyle='#93a1c0'; gg.fillText((v>0?'+':v<0?'−':'')+Math.abs(v),l-10,y(v)); }
+  gg.lineWidth=1; gg.textAlign='center'; gg.textBaseline='bottom'; gg.fillStyle='#e8eefb';
+  gg.fillText('Launch position',(l+Wg-r)/2,Hg-8);
+  gg.save(); gg.translate(24,(t+Hg-b)/2); gg.rotate(-Math.PI/2); gg.textBaseline='middle'; gg.fillText('Change in speed (km/s)',0,0); gg.restore();
+  flights.forEach(f=>{
+    if(f.d==null){ gg.strokeStyle='#ff8a6b'; gg.lineWidth=3; const cx=x(f.p), cy=y(0); gg.beginPath(); gg.moveTo(cx-7,cy-7); gg.lineTo(cx+7,cy+7); gg.moveTo(cx+7,cy-7); gg.lineTo(cx-7,cy+7); gg.stroke(); return; }
+    gg.fillStyle=f.d>0.2?'#5fd39a':f.d<-0.2?'#ff8a6b':'#e8eefb'; gg.beginPath(); gg.arc(x(f.p),y(Math.max(-10,Math.min(10,f.d))),8,0,7); gg.fill();
+  });
+  if(!flights.length){ gg.fillStyle='#93a1c0'; gg.textBaseline='middle'; gg.fillText('Launch a few flights to see your data here.',(l+Wg-r)/2,(t+Hg-b)/2-30); }
+}
+$('graphBtn').addEventListener('click',()=>{ const on=$('graphBox').hidden; $('graphBox').hidden=!on; $('graphBtn').setAttribute('aria-pressed',String(on)); $('graphBtn').textContent=on?'Hide graph':'Show graph'; drawGraph(); });
+$('copyBtn').addEventListener('click',()=>{
+  const rows=[['Trial','Launch position','Prediction','Prediction correct?','Passed the planet','Closest approach (planet widths)','Speed after (km/s)','Change in speed (km/s)']].concat(flights.slice().reverse().map(f=>[f.n,f.p,PN[f.pr],f.d==null?'Crashed':f.hit?'Yes':'No',f.side,f.cl==null?'Crashed':f.cl.toFixed(1),f.v==null?'':f.v.toFixed(1),f.d==null?'':f.d.toFixed(1)]));
+  const txt=rows.map(r=>r.join('\t')).join('\n');
+  const say=m=>{ $('copied').textContent=m; };
+  try{ navigator.clipboard.writeText(txt).then(()=>say('Copied. Paste it into Google Sheets.'),()=>say('Copy did not work here. Select the table and copy it instead.')); }catch(e){ say('Copy did not work here. Select the table and copy it instead.'); }
+});
+
+/* ---------- drawing ---------- */
+const LOOK={
+ plain:{glow:'63,167,214',base:'#3fa7d6',paint(x,Y){ g.fillStyle='rgba(255,255,255,.18)'; g.fillRect(x-R,Y-9,2*R,5); g.fillRect(x-R,Y+5,2*R,4); }},
+ jupiter:{glow:'226,176,120',base:'#d9a36b',paint(x,Y){ const b=[['#f2dcc0',-16,5],['#b8763f',-9,4],['#efd3ad',-3,4],['#a8652f',3,5],['#f0d9b8',10,4],['#c48a55',15,5]]; b.forEach(([c,o,h])=>{g.fillStyle=c; g.fillRect(x-R,Y+o,2*R,h);}); g.fillStyle='#c0533a'; g.beginPath(); g.ellipse(x+7,Y+6,5,3,0,0,7); g.fill(); }},
+ venus:{glow:'240,214,150',base:'#e8cf96',paint(x,Y){ g.fillStyle='rgba(255,246,220,.45)'; g.beginPath(); g.ellipse(x-4,Y-6,16,5,-0.3,0,7); g.fill(); g.beginPath(); g.ellipse(x+6,Y+8,13,4,0.2,0,7); g.fill(); g.fillStyle='rgba(190,150,80,.35)'; g.beginPath(); g.ellipse(x+2,Y+1,18,3,-0.1,0,7); g.fill(); }},
+ earth:{glow:'90,170,255',base:'#2f7fd6',paint(x,Y){ g.fillStyle='#4fae5c'; g.beginPath(); g.ellipse(x-7,Y-3,8,10,0.4,0,7); g.fill(); g.beginPath(); g.ellipse(x+9,Y+6,7,6,-0.3,0,7); g.fill(); g.fillStyle='rgba(255,255,255,.75)'; g.beginPath(); g.ellipse(x,Y-R+3,12,4,0,0,7); g.fill(); g.beginPath(); g.ellipse(x+4,Y+2,10,2,0.3,0,7); g.fill(); }}
+};
+const curLook=()=>mode==='chal'&&round<NM?LOOK[MISSIONS[round].planet]:mode==='chal'?LOOK[MISSIONS[NM-1].planet]:LOOK.plain;
+function planet(th){
+  const [x,Y]=PP(th), L=(cur&&cur.look)||curLook();
+  const gr=g.createRadialGradient(x-8,Y-8,4,x,Y,R+16);
+  gr.addColorStop(0,'rgba('+L.glow+',.35)');gr.addColorStop(1,'rgba('+L.glow+',0)');
+  g.fillStyle=gr; g.beginPath(); g.arc(x,Y,R+16,0,7); g.fill();
+  g.fillStyle=L.base; g.beginPath(); g.arc(x,Y,R,0,7); g.fill();
+  g.save(); g.beginPath(); g.arc(x,Y,R,0,7); g.clip();
+  L.paint(x,Y);
+  g.fillStyle='rgba(5,8,18,.4)'; g.beginPath(); g.arc(x-6*Math.sin(th),Y-10*Math.cos(th),R,0,7); g.fill(); g.restore();
+}
+function craft(x,y,vx,vy){
+  g.save(); g.translate(x,y); g.rotate(Math.atan2(vy,vx));
+  g.fillStyle='rgba(242,165,65,.25)'; g.beginPath(); g.arc(0,0,13,0,7); g.fill();
+  g.fillStyle='#93a1c0'; g.fillRect(-6,-14,4,28);
+  g.fillStyle='#f6f1e7'; g.beginPath(); g.moveTo(10,0); g.lineTo(-7,-6); g.lineTo(-7,6); g.closePath(); g.fill();
+  g.restore();
+}
+function line(p){ if(p.length<2) return; g.beginPath(); g.moveTo(p[0][0],p[0][1]); for(let i=1;i<p.length;i++) g.lineTo(p[i][0],p[i][1]); g.stroke(); }
+function draw(){
+  g.fillStyle='#050812'; g.fillRect(0,0,W,H);
+  for(const [x,y,r,a] of stars){ g.fillStyle='rgba(232,238,251,'+a+')'; g.fillRect(x,y,r,r); }
+  const sg=g.createRadialGradient(500,H+260,20,500,H+260,520);
+  sg.addColorStop(0,'rgba(242,165,65,.35)'); sg.addColorStop(1,'rgba(242,165,65,0)');
+  g.fillStyle=sg; g.fillRect(0,0,W,H);
+  g.font='600 17px Atkinson Hyperlegible, Verdana, sans-serif';
+  g.fillStyle='rgba(242,165,65,.85)'; g.textAlign='right'; g.textBaseline='bottom';
+  g.fillText('Sun is far below ↓',W-14,H-10);
+  g.setLineDash([6,10]); g.strokeStyle='rgba(63,167,214,.45)'; g.lineWidth=2;
+  g.beginPath(); g.arc(500,SY,RO,-Math.PI/2-0.75,-Math.PI/2+0.75); g.stroke(); g.setLineDash([]);
+  { const ta=0.62, [ex,ey]=PP(ta); g.save(); g.translate(ex,ey); g.rotate(ta); g.fillStyle='rgba(63,167,214,.8)'; g.beginPath(); g.moveTo(14,0); g.lineTo(0,-8); g.lineTo(0,8); g.fill(); g.restore();
+    g.fillStyle='rgba(63,167,214,.9)'; g.textAlign='right'; g.textBaseline='bottom'; g.fillText('planet’s orbit',ex-14,ey-12); }
+  trails.forEach((t,i)=>{ if(cur&&t.pts===cur.trail) return; g.strokeStyle='rgba(147,161,192,'+(0.12+0.06*i)+')'; g.lineWidth=2; line(t.pts); });
+  const ax=AX(pos());
+  g.strokeStyle='rgba(242,165,65,.7)'; g.lineWidth=2; g.beginPath(); g.moveTo(ax,H-4); g.lineTo(ax,H-22); g.stroke();
+  g.fillStyle='rgba(242,165,65,.9)'; g.beginPath(); g.moveTo(ax-7,H-16); g.lineTo(ax,H-26); g.lineTo(ax+7,H-16); g.fill();
+  if(cur){
+    g.strokeStyle='rgba(242,165,65,.35)'; g.lineWidth=8; line(cur.trail);
+    g.strokeStyle='#f2a541'; g.lineWidth=3; line(cur.trail);
+    planet(cur.th);
+    if(cur.state==='crash'){ g.fillStyle='#ff8a6b'; for(let k=0;k<10;k++){const a=k/10*6.28; g.beginPath(); g.arc(cur.x+Math.cos(a)*16,cur.y+Math.sin(a)*16,3,0,7); g.fill();} }
+    else craft(cur.x,cur.y,cur.vx,cur.vy);
+  } else { planet(TH0); craft(ax,H-40,0,-1); }
+}
+
+/* ---------- controls ---------- */
+function setAim(v){ v=Math.max(-8,Math.min(8,Math.round(v*10)/10)); $('aim').value=v; $('aimOut').textContent=fmtPos(v); if(!flying()){ cur=null; draw(); } }
+$('aim').addEventListener('input',()=>setAim(+$('aim').value));
+$('minus').addEventListener('click',()=>setAim(pos()-0.1));
+$('plus').addEventListener('click',()=>setAim(pos()+0.1));
+$('launch').addEventListener('click',start);
+$('reset').addEventListener('click',()=>{
+  if(flying()) return; cancelAnimationFrame(raf); cur=null; trails=[];
+  if(mode==='inv'){ flights=[]; n=0; renderLog(); drawGraph(); $('copied').textContent=''; setPred(null); clearResult('Pick a launch position and make a prediction, then press Launch.'); }
+  else { newGame(); }
+  draw();
+});
+setAim(-4); setPred(null); draw();
+})();
+</script>
+
+</body>
+</html>
