@@ -233,6 +233,7 @@ function setMode(m){
   $('invCard').hidden=!inv; $('invPanel').hidden=!inv; $('predict').hidden=!inv;
   $('chalCard').hidden=inv; $('chalPanel').hidden=inv; $('hudTgt').hidden=inv;
   cur=null; trails=[];
+  applyStep();
   if(inv){
     $('s1lab').textContent='Speed before'; $('s1').textContent='15.0'; $('s3lab').textContent='Change';
     setPred(null); clearResult('Pick a launch position and make a prediction, then press Launch.');
@@ -451,11 +452,15 @@ function draw(){
 }
 
 /* ---------- controls ---------- */
-function setAim(v){ v=Math.max(-8,Math.min(8,Math.round(v*10)/10)); $('aim').value=v; $('aimOut').textContent=fmtPos(v); if(!flying()){ cur=null; draw(); } }
+const STEP=()=>mode==='inv'?1:0.1;
+function applyStep(){ const st=STEP(); $('aim').step=st; $('minus').textContent='−'+st; $('plus').textContent='+'+st;
+  $('minus').setAttribute('aria-label','Move launch position left by '+st); $('plus').setAttribute('aria-label','Move launch position right by '+st); setAim(pos()); }
+function setAim(v){ const st=STEP(); v=Math.max(-8,Math.min(8,Math.round(v/st)*st)); v=Math.round(v*10)/10; $('aim').value=v; $('aimOut').textContent=fmtPos(v); if(!flying()){ cur=null; draw(); } }
 $('aim').addEventListener('input',()=>setAim(+$('aim').value));
-$('minus').addEventListener('click',()=>setAim(pos()-0.1));
-$('plus').addEventListener('click',()=>setAim(pos()+0.1));
+$('minus').addEventListener('click',()=>setAim(pos()-STEP()));
+$('plus').addEventListener('click',()=>setAim(pos()+STEP()));
 $('launch').addEventListener('click',start);
+applyStep();
 $('reset').addEventListener('click',()=>{
   if(flying()) return; cancelAnimationFrame(raf); cur=null; trails=[];
   if(mode==='inv'){ flights=[]; n=0; renderLog(); drawGraph(); $('copied').textContent=''; setPred(null); clearResult('Pick a launch position and make a prediction, then press Launch.'); }
