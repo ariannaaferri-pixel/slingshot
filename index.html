@@ -163,6 +163,7 @@ tbody tr:last-child td{border-bottom:none}
       <div class="btnrow">
         <button class="btn small ghost" id="graphBtn" aria-pressed="false">Show graph</button>
         <button class="btn small ghost" id="copyBtn">Copy data</button>
+        <button class="btn small ghost" id="eraseBtn">Erase all data</button>
       </div>
     </div>
     <p class="copied" id="copied" aria-live="polite"></p>
@@ -226,7 +227,8 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 
 /* ---------- modes ---------- */
 function setMode(m){
-  if(flying()) return;
+  if(flying()||m===mode) return;
+  if(mode==='chal'&&typeof midGame==='function'&&midGame()&&!confirm('Leave the Challenge? Your points for this game will be erased.')) return;
   mode=m;
   document.querySelectorAll('.mode').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===m)));
   const inv=m==='inv';
@@ -272,8 +274,10 @@ function showRound(){
   $('hudTgt').textContent= round<NM ? 'TARGET '+t.toFixed(1)+' km/s' : '';
   if(round<NM) $('s1').textContent=t.toFixed(1);
 }
-document.querySelectorAll('.set').forEach(b=>b.addEventListener('click',()=>{ if(flying()) return; setI=+b.dataset.s; newGame(); }));
-$('newGame').addEventListener('click',()=>{ if(!flying()) newGame(); });
+const midGame=()=>mode==='chal'&&scores.length>0&&round<NM;
+const okRestart=()=>!midGame()||confirm('Start over? Your points for this game will be erased.');
+document.querySelectorAll('.set').forEach(b=>b.addEventListener('click',()=>{ if(flying()||+b.dataset.s===setI&&scores.length===0) return; if(!okRestart()) return; setI=+b.dataset.s; newGame(); }));
+$('newGame').addEventListener('click',()=>{ if(!flying()&&okRestart()) newGame(); });
 const total=()=>scores.reduce((a,r)=>a+r.pts,0);
 function renderScores(){
   const T=SETS[setI];
@@ -462,10 +466,15 @@ $('plus').addEventListener('click',()=>setAim(pos()+STEP()));
 $('launch').addEventListener('click',start);
 applyStep();
 $('reset').addEventListener('click',()=>{
+  // CLEAR only wipes the flight paths on screen; data and scores are kept
   if(flying()) return; cancelAnimationFrame(raf); cur=null; trails=[];
-  if(mode==='inv'){ flights=[]; n=0; renderLog(); drawGraph(); $('copied').textContent=''; setPred(null); clearResult('Pick a launch position and make a prediction, then press Launch.'); }
-  else { newGame(); }
   draw();
+});
+$('eraseBtn').addEventListener('click',()=>{
+  if(flying()||!flights.length) return;
+  if(!confirm('Erase ALL of your flight data? You will have to redo every launch.')) return;
+  cancelAnimationFrame(raf); cur=null; trails=[];
+  flights=[]; n=0; renderLog(); drawGraph(); $('copied').textContent=''; setPred(null); clearResult('Pick a launch position and make a prediction, then press Launch.'); draw();
 });
 setAim(-4); setPred(null); draw();
 })();
