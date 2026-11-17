@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Design a Buffalo House Model</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Outfit:wght@400;700&display=swap">
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+
+/* Layout: one 16:9 model stage, scaled to fit, with a step bar under it. */
+:root {
+  --page: #EEF2FB; --card: #FFFFFF; --ink: #1A2233; --muted: #55607A; --royal: #1F4FD8; --royal-ink: #FFFFFF; --line: #C9D3EA; --track: #DCE3F4;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; --font-head: 'Outfit', 'Inter', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --page: #0F1626; --card: #172036; --ink: #E8EDF8; --muted: #A4AEC6; --royal: #5B82F0; --royal-ink: #0B1220; --line: #2C3A5C; --track: #26324E; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0F1626; --card: #172036; --ink: #E8EDF8; --muted: #A4AEC6; --royal: #5B82F0; --royal-ink: #0B1220; --line: #2C3A5C; --track: #26324E; color-scheme: dark }
+html, body { background: var(--page); color: var(--ink); }
+body { font-family: var(--font-ui); font-size: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 24px; }
+.wrap { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; }
+.top h1 { font-family: var(--font-head); font-size: clamp(22px, 3vw, 30px); margin: 0; text-wrap: balance; }
+.top p { margin: 0; color: var(--muted); font-size: 15px; }
+.frame { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; overflow: hidden; border-radius: 12px; border: 1px solid var(--line); background: #F5F8FF; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden;
+  --sans: 'Inter', system-ui, sans-serif; --display: 'Outfit', 'Inter', system-ui, sans-serif; }
+#stage .scene { position: absolute; inset: 0; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.count { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 9.5em; }
+.track { flex: 1 1 160px; height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; min-width: 0; }
+.fill { height: 100%; width: 0; background: var(--royal); border-radius: 4px; transition: width .25s ease; }
+.btns { display: flex; gap: 8px; margin-left: auto; }
+button { font: inherit; font-weight: 700; font-size: 16px; border-radius: 10px; padding: 10px 18px; cursor: pointer; border: 2px solid var(--royal); background: var(--card); color: var(--royal); }
+button.primary { background: var(--royal); color: var(--royal-ink); padding-inline: 28px; }
+button:disabled { opacity: .4; cursor: default; }
+button:focus-visible { outline: 3px solid var(--royal); outline-offset: 2px; }
+.hint { color: var(--muted); font-size: 14px; margin: 0; }
+@media (max-width: 560px) { .btns { width: 100%; } .btns button { flex: 1; padding-inline: 8px; } .count { min-width: 0; } }
+#stage { --ground:#F5F8FF; --main:#1F4FD8; --second:#1A2233; --accent:#F2B630; color:var(--second); font-family:var(--sans, system-ui, sans-serif) }
+.ground { position:absolute; inset:0; background:var(--ground) }
+.words { position:absolute; margin:0; display:flex; flex-direction:column; gap:20px } .words > * { margin:0 }
+.line { font-family:var(--display, var(--sans, system-ui, sans-serif)); font-size:60px; line-height:1.08; font-weight:700 } .sub { font-size:34px; line-height:1.35 }
+#stage { --pencil:color-mix(in srgb, var(--second) 62%, var(--ground)); --green:color-mix(in oklch decreasing hue, var(--main) 50%, var(--accent)); --gridm:color-mix(in srgb, var(--main) 11%, var(--ground)); --gridM:color-mix(in srgb, var(--main) 24%, var(--ground)); --wallc:color-mix(in srgb, var(--accent) 12%, var(--ground)); --siding:color-mix(in srgb, var(--second) 9%, var(--wallc)); --roof:color-mix(in srgb, var(--second) 58%, var(--ground)); --roofL:color-mix(in srgb, var(--second) 36%, var(--ground)); --glass:color-mix(in srgb, var(--main) 14%, var(--ground)); --grass:color-mix(in srgb, var(--green) 30%, var(--ground)); --grassD:color-mix(in srgb, var(--green) 75%, var(--second)); --panel:color-mix(in srgb, var(--main) 6%, var(--ground)); --sunE:color-mix(in srgb, var(--accent) 70%, var(--second)); --shadeW:color-mix(in srgb, var(--second) 34%, transparent); --sunW:color-mix(in srgb, var(--accent) 85%, transparent) }
+.dg-clip { position:absolute; left:0; top:0; width:1240px; height:1080px; overflow:hidden }
+.dg { position:absolute; left:0; top:0; width:1240px; height:1080px; transform-origin:0 0 }
+.dg-svg { position:absolute; left:0; top:0; overflow:visible }
+.lab { position:absolute; font-size:calc(28px * var(--k, 1)); line-height:1.15; padding:calc(2px * var(--k, 1)) calc(7px * var(--k, 1)); border-radius:calc(6px * var(--k, 1)); background:color-mix(in srgb, var(--ground) 88%, transparent); color:var(--second); width:max-content; margin:0 }
+.lab.c { transform:translate(-50%, -50%) } .lab.l { transform:translate(0, -50%) } .lab.r { transform:translate(-100%, -50%) }
+.tag { font-weight:700; border:calc(3px * var(--k, 1)) solid var(--pencil); background:var(--ground) }
+.tag-blue { border-color:var(--main); color:var(--main) } .tag-green { border-color:var(--green) } .tag-sun { border-color:var(--accent) }
+.pn { position:absolute; left:1240px; top:0; width:680px; height:1080px; background:var(--panel); border-left:3px solid color-mix(in srgb, var(--main) 28%, var(--ground)) }
+.pn-w { left:60px; top:120px; width:560px }
+.pn-eye { display:flex; align-items:center; gap:14px; font-size:28px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--main) }
+.pn-chip { width:46px; height:12px; border-radius:6px; flex:none }
+.pn-pencil { background:var(--pencil) } .pn-blue { background:var(--main) } .pn-green { background:var(--green) } .pn-sun { background:var(--accent) }
+.pn-h { font-size:62px; color:var(--second) }
+.pn-steps { display:grid; margin-top:10px } .pn-steps > * { grid-area:1 / 1 }
+.pn-s { font-size:36px; line-height:1.4; color:var(--second); margin:0 }
+.pn-key { position:absolute; left:60px; bottom:44px; width:560px; display:flex; flex-direction:column; gap:10px; padding:18px 22px; border-radius:14px; background:var(--ground); border:2px solid color-mix(in srgb, var(--main) 25%, var(--ground)) }
+.pn-key-h { margin:0; font-size:24px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--main) }
+.pn-key-i { margin:0; display:flex; align-items:center; gap:16px; font-size:27px; line-height:1.25; color:var(--second) } .pn-key-sw { flex:none; width:52px; height:10px; border-radius:5px }
+.pn-list { display:flex; flex-direction:column; gap:22px; margin-top:10px } .pn-li { font-size:34px; line-height:1.35; margin:0; display:flex; gap:18px } .pn-n { flex:none; width:52px; height:52px; border-radius:50%; background:var(--main); color:var(--ground); font-weight:700; display:flex; align-items:center; justify-content:center; font-size:30px }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="top"><h1>Design a Buffalo House</h1><p>Part 2: Model It, step by step</p></div>
+  <div class="frame" id="frame"><div id="stage"></div></div>
+  <div class="bar">
+    <span class="count" id="count">Step 1 of 1</span>
+    <div class="track" aria-hidden="true"><div class="fill" id="fill"></div></div>
+    <div class="btns">
+      <button type="button" id="back">Back</button>
+      <button type="button" id="replay">Replay step</button>
+      <button type="button" id="next" class="primary">Next</button>
+    </div>
+  </div>
+  <p class="hint">Click Next to see each step. You can also use the arrow keys.</p>
+</div>
+<script>
+(function () {
+  const stage = document.getElementById('stage');
+  const clamp01 = (x) => Math.min(1, Math.max(0, x));
+  const base = {
+    seg: (t, a, b) => clamp01((t - a) / (b - a)),
+    lerp: (a, b, p) => a + (b - a) * p,
+    clamp01,
+    eo: (x) => 1 - Math.pow(1 - clamp01(x), 3),
+    ei: (x) => Math.pow(clamp01(x), 3),
+    eio: (x) => { x = clamp01(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; },
+    eob: (x, s) => { x = clamp01(x); const c1 = s === undefined ? 1.70158 : s, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); },
+  };
+  const SCENES = {};
+  window.makeKit = function (id) {
+    const el = document.createElement('div');
+    el.className = 'scene'; el.hidden = true; stage.appendChild(el);
+    return Object.assign({}, base, {
+      stage: el, W: 1920, H: 1080,
+      h(html) { const tp = document.createElement('template'); tp.innerHTML = html.trim(); return tp.content.children.length === 1 ? tp.content.firstElementChild : tp.content; },
+      css(text) { const s = document.createElement('style'); s.textContent = text; el.appendChild(s); },
+      scene(sid, def) { SCENES[sid] = { def, el, kit: this }; },
+    });
+  };
+  window.__SCENES = SCENES;
+})();
+</script>
+<script>
+// The worksheet's Side View of a Buffalo House. 1 ft = 70 px. The wall is at x 850, the ground at y 900, the overhang dot at (850, 340).
+window.W = {
+  ease(p) { p = Math.min(1, Math.max(0, p)); return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; },
+  cl(p) { return Math.min(1, Math.max(0, p)); },
+  // Where a noon sunlight line from the tip of an L ft overhang meets the wall (or the ground first).
+  hit(L, deg) {
+    const tx = 850 - 70 * L, ty = 340, tn = Math.tan(deg * Math.PI / 180);
+    let ex = 850, ey = ty + 70 * L * tn, ground = false;
+    if (ey > 900) { ey = 900; ex = tx + 560 / tn; ground = true; }
+    return { tx, ty, ex, ey, ground };
+  },
+  lab(text, x, y, cls, style) {
+    return '<div class="lab ' + (cls || 'c') + '" style="left:' + x + 'px;top:' + y + 'px' + (style ? ';' + style : '') + '">' + text + '</div>';
+  },
+  // Graph paper: 0.5 ft squares, heavier line every foot.
+  paper() {
+    let s = '<rect x="150" y="200" width="700" height="700" style="fill:var(--ground)"/>';
+    for (let i = 0; i <= 20; i++) {
+      const v = 150 + 35 * i, h = 200 + 35 * i, maj = i % 2 === 0, st = 'stroke:var(' + (maj ? '--gridM' : '--gridm') + ');stroke-width:' + (maj ? 1.7 : 1);
+      s += '<path d="M' + v + ' 200V900" style="' + st + '"/><path d="M150 ' + h + 'H850" style="' + st + '"/>';
+    }
+    return s;
+  },
+  house() {
+    let s = '<g class="dg-ground"><rect x="110" y="900" width="1130" height="42" style="fill:var(--grass)"/>';
+    for (let x = 160; x < 840; x += 35) s += '<path d="M' + x + ' 900 l7 -13 l7 13" style="fill:none;stroke:var(--grassD);stroke-width:2"/>';
+    s += '</g><g class="dg-sun"><circle cx="220" cy="270" r="27" style="fill:var(--accent);stroke:var(--sunE);stroke-width:2.5"/></g>';
+    s += '<g class="dg-house"><rect x="1118" y="150" width="34" height="150" style="fill:var(--roofL);stroke:var(--second);stroke-width:3"/>';
+    s += '<rect x="850" y="340" width="350" height="560" style="fill:var(--wallc);stroke:var(--second);stroke-width:5"/>';
+    for (let y = 380; y < 900; y += 40) s += '<path d="M853 ' + y + 'H1197" style="stroke:var(--siding);stroke-width:2"/>';
+    s += '<path d="M842 342 L1025 186 L1208 342 Z" style="fill:var(--roof);stroke:var(--second);stroke-width:4;stroke-linejoin:round"/>';
+    [300, 262, 224].forEach((y) => { const hw = (y - 186) / 156 * 183; s += '<path d="M' + (1025 - hw + 8).toFixed(0) + ' ' + y + 'H' + (1025 + hw - 8).toFixed(0) + '" style="stroke:var(--roofL);stroke-width:2"/>'; });
+    s += '<rect class="dg-window" x="840" y="410" width="18" height="280" rx="2" style="fill:var(--glass);stroke:var(--second);stroke-width:3"/>';
+    s += '<path d="M712 262 Q790 280 838 332" style="fill:none;stroke:var(--second);stroke-width:2"/><path d="M826 330 L840 336 L834 322" style="fill:none;stroke:var(--second);stroke-width:2"/>';
+    s += '<circle class="dg-dot" cx="850" cy="340" r="8" style="fill:var(--second)"/></g>';
+    return s;
+  },
+  labels() {
+    let s = '';
+    for (let i = 0; i <= 10; i++) s += W.lab(String(i), 132, 900 - 70 * i, 'r', 'background:none');
+    s += W.lab('Noon Sun (to the south)', 160, 330, 'l', 'max-width:260px');
+    s += W.lab('Overhang starts here (top of wall, 8 ft)', 640, 236, 'c', 'max-width:330px;text-align:center');
+    s += W.lab('Window (3 ft to 7 ft)', 872, 520, 'l', 'max-width:250px;background:none');
+    s += W.lab('Inside the house', 1025, 730, 'c', 'max-width:300px;text-align:center;background:none');
+    s += W.lab('← SOUTH', 200, 975, 'c', 'font-weight:700;background:none');
+    s += W.lab('NORTH →', 1150, 975, 'c', 'font-weight:700;background:none');
+    s += W.lab('Side view. 1 small square = 0.5 ft (2 squares = 1 ft)', 675, 1032, 'c', 'max-width:900px;background:none');
+    return s;
+  },
+  // The whole diagram. o.under / o.over: svg markup below / above the house; o.html: labels and tags in diagram px.
+  diagram(id, o) {
+    o = o || {};
+    return '<div class="dg-clip"><div class="dg ' + id + '-dg"><svg class="dg-svg" viewBox="0 0 1240 1080" width="1240" height="1080">' +
+      W.paper() + (o.under || '') + W.house() + (o.over || '') + '</svg>' + W.labels() + (o.html || '') + '</div></div>';
+  },
+  // Camera on the diagram: keys [{x, y, z}, {t, d, x, y, z}, ...]. (x, y) is the diagram point shown at the middle of the left area.
+  cam(dg, t, keys, creep) {
+    let x = keys[0].x, y = keys[0].y, z = keys[0].z;
+    for (let i = 1; i < keys.length; i++) {
+      const k = keys[i], p = W.ease((t - k.t) / (k.d || 1.4));
+      x += (k.x - x) * p; y += (k.y - y) * p; z += (k.z - z) * p;
+    }
+    z *= 1 + (creep === undefined ? 0.0012 : creep) * Math.max(0, t);
+    dg.style.transform = 'translate(' + (620 - x * z).toFixed(2) + 'px,' + (540 - y * z).toFixed(2) + 'px) scale(' + z.toFixed(4) + ')';
+    dg.style.setProperty('--k', (1 / z).toFixed(4));
+  },
+  // A line drawn from (x1,y1) toward (x2,y2), p of the way.
+  draw(el, x1, y1, x2, y2, p) {
+    p = W.cl(p);
+    el.setAttribute('x1', x1); el.setAttribute('y1', y1);
+    el.setAttribute('x2', (x1 + (x2 - x1) * p).toFixed(2)); el.setAttribute('y2', (y1 + (y2 - y1) * p).toFixed(2));
+    el.style.opacity = p > 0 ? 1 : 0;
+  },
+  // The protractor: centered on (0,0), flat edge level, curve below, 0 degrees pointing right (toward the wall).
+  prot(cls, R) {
+    let s = '<g class="' + cls + '"><path d="M' + (-R) + ' 0 A' + R + ' ' + R + ' 0 0 0 ' + R + ' 0 Z" style="fill:color-mix(in srgb, var(--main) 10%, transparent);stroke:var(--main);stroke-width:2.5"/>';
+    s += '<path d="M' + (-R * 0.58) + ' 0 A' + (R * 0.58) + ' ' + (R * 0.58) + ' 0 0 0 ' + (R * 0.58) + ' 0" style="fill:none;stroke:color-mix(in srgb, var(--main) 40%, transparent);stroke-width:1.4"/>';
+    for (let a = 0; a <= 180; a += 5) {
+      const r = a * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r), len = a % 10 ? 0.07 : (a % 30 ? 0.12 : 0.19);
+      s += '<path d="M' + (R * c).toFixed(1) + ' ' + (R * sn).toFixed(1) + ' L' + (R * (1 - len) * c).toFixed(1) + ' ' + (R * (1 - len) * sn).toFixed(1) + '" style="stroke:var(--main);stroke-width:' + (a % 10 ? 1.1 : 2) + '"/>';
+    }
+    return s + '<path d="M' + (-R * 1.1) + ' 0 H' + (R * 1.1) + '" style="stroke:var(--main);stroke-width:3"/><circle r="4" style="fill:var(--ground);stroke:var(--main);stroke-width:2"/></g>';
+  },
+  // The measured angle, from level (pointing right) down to deg.
+  arc(r, deg) {
+    const a = deg * Math.PI / 180;
+    return 'M' + r + ' 0 A' + r + ' ' + r + ' 0 0 1 ' + (r * Math.cos(a)).toFixed(2) + ' ' + (r * Math.sin(a)).toFixed(2);
+  },
+  // Finished overhangs and their lines: [{L, col:'--pencil', degs:[71,24], o}]
+  done(list) {
+    return list.map((m) => {
+      let s = '<g class="dg-mark" style="opacity:' + (m.o || 1) + '">';
+      m.degs.forEach((d) => {
+        const h = W.hit(m.L, d);
+        s += '<path d="M' + h.tx + ' ' + h.ty + ' L' + h.ex.toFixed(1) + ' ' + h.ey.toFixed(1) + '" style="stroke:var(' + m.col + ');stroke-width:4;stroke-linecap:round"/><circle cx="' + h.ex.toFixed(1) + '" cy="' + h.ey.toFixed(1) + '" r="6" style="fill:var(' + m.col + ')"/>';
+      });
+      return s + '<path d="M850 340 H' + (850 - 70 * m.L) + '" style="stroke:var(' + m.col + ');stroke-width:7;stroke-linecap:round"/></g>';
+    }).join('');
+  },
+  // Window light for a line that meets the wall at ey: sunny below it, shaded above it (window runs y 410 to 690).
+  light(sun, shade, ey, p) {
+    const y = Math.min(690, Math.max(410, ey));
+    sun.setAttribute('y', y); sun.setAttribute('height', 690 - y);
+    shade.setAttribute('y', 410); shade.setAttribute('height', y - 410);
+    sun.style.opacity = p; shade.style.opacity = p;
+  },
+  lightSvg(cls) {
+    return '<rect class="' + cls + '-sun" x="838" width="22" y="410" height="0" style="fill:var(--sunW);opacity:0"/><rect class="' + cls + '-shade" x="838" width="22" y="410" height="0" style="fill:var(--shadeW);opacity:0"/>';
+  },
+  // An expanding ring that calls the eye to a point.
+  pulse(el, t, t0, r0) {
+    if (t < t0) { el.style.opacity = 0; return; }
+    const q = ((t - t0) % 1.3) / 1.3;
+    el.setAttribute('r', (r0 + 34 * q).toFixed(1));
+    el.style.opacity = ((1 - q) * 0.85).toFixed(3);
+  },
+  ring(cls, x, y, col) {
+    return '<circle class="' + cls + '" cx="' + x + '" cy="' + y + '" r="10" style="fill:none;stroke:var(' + (col || '--main') + ');stroke-width:4;opacity:0"/>';
+  },
+  // The instruction panel on the right. steps cross-fade in one spot.
+  panel(eye, chip, head, steps) {
+    return '<div class="pn"><div class="words pn-w"><div class="pn-eye"><span class="pn-chip pn-' + chip + '"></span>' + eye + '</div><h2 class="line pn-h">' + head + '</h2><div class="pn-steps">' +
+      steps.map((s) => '<p class="pn-s">' + s + '</p>').join('') + '</div></div>' + W.key() + '</div>';
+  },
+  // The color key, at the foot of the panel.
+  key() {
+    return '<div class="pn-key"><p class="pn-key-h">Key</p>' +
+      '<p class="pn-key-i"><span class="pn-key-sw pn-pencil"></span>Gray = 1 ft overhang (pencil)</p>' +
+      '<p class="pn-key-i"><span class="pn-key-sw pn-blue"></span>Blue = 3 ft overhang (colored pencil 1)</p>' +
+      '<p class="pn-key-i"><span class="pn-key-sw pn-green"></span>Green = 2 ft design (colored pencil 2)</p></div>';
+  },
+  steps(els, t, times) {
+    els.forEach((el, i) => {
+      const a = times[i], b = i + 1 < times.length ? times[i + 1] : 1e9;
+      const inn = W.ease((t - a) / 0.5), out = W.cl((t - (b - 0.45)) / 0.45);
+      el.style.opacity = (inn * (1 - out)).toFixed(3);
+      el.style.transform = 'translateY(' + ((1 - inn) * 22 - out * 12).toFixed(1) + 'px)';
+    });
+  },
+  head(el, t) {
+    const p = W.ease((t + 0.5) / 0.6);
+    el.style.opacity = p; el.style.transform = 'translateY(' + ((1 - p) * 20).toFixed(1) + 'px)';
+  },
+};
+</script>
+<script>
+(function (kit) {
+const { seg, eo } = kit;
+kit.scene('title', {
+  init(kit) {
+    kit.stage.append(kit.h('<div class="ground">' +
+      W.diagram('title', { over: W.ring('title-win', 849, 550, '--accent') }) +
+      W.panel('Part 2: Model It', 'sun', 'Design a Buffalo House', ['Your goal: In June, no direct sunlight hits the window. In December, sunlight hits the whole window.']) +
+      '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    this.dg = q('.title-dg');
+    this.sun = q('.dg-sun');
+    this.win = q('.title-win');
+    this.head = q('.pn-w');
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    W.cam(this.dg, t, [{ x: 640, y: 560, z: 0.97 }], 0.003);
+    const b = 1 + 0.03 * Math.sin(t * 2.1);
+    this.sun.setAttribute('transform', 'translate(220 270) scale(' + b.toFixed(4) + ') translate(-220 -270)');
+    W.pulse(this.win, t, 3.2, 14);
+    W.head(this.head, t);
+    W.steps(this.steps, t, [0.9]);
+  },
+});
+})(makeKit("title"));
+(function (kit) {
+const { seg, eo, eob } = kit;
+kit.scene('tour', {
+  init(kit) {
+    const over = W.ring('tour-sunr', 220, 270, '--accent') + W.ring('tour-dotr', 850, 340) +
+      '<rect class="tour-winr" x="833" y="403" width="32" height="294" rx="6" style="fill:none;stroke:var(--accent);stroke-width:6;opacity:0"/>' +
+      '<rect class="tour-sq1" x="780" y="305" width="35" height="35" style="fill:var(--sunW);opacity:0"/><rect class="tour-sq2" x="815" y="305" width="35" height="35" style="fill:var(--sunW);opacity:0"/>' +
+      '<path class="tour-br" d="M780 296 V288 H850 V296" style="fill:none;stroke:var(--main);stroke-width:3;opacity:0"/>';
+    const html = W.lab('1 ft', 815, 268, 'c tag tag-blue tour-ft', 'opacity:0');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('tour', { over, html }) +
+      W.panel('Part 2: Model It', 'sun', 'Know the picture', [
+        'South is on the left. That is where the noon Sun is in Buffalo.',
+        'The dot at the top of the wall is where every overhang starts. It is 8 ft above the ground.',
+        'The window runs from 3 ft to 7 ft on the wall.',
+        'Scale: 2 small squares = 1 ft. Count squares to measure each overhang.']) + '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    Object.assign(this, { dg: q('.tour-dg'), sunr: q('.tour-sunr'), dotr: q('.tour-dotr'), winr: q('.tour-winr'), sq1: q('.tour-sq1'), sq2: q('.tour-sq2'), br: q('.tour-br'), ft: q('.tour-ft'), head: q('.pn-w') });
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    W.cam(this.dg, t, [{ x: 640, y: 560, z: 0.99 },
+      { t: 0.2, d: 1.6, x: 520, y: 560, z: 1.08 },
+      { t: 5, d: 1.5, x: 740, y: 420, z: 1.55 },
+      { t: 10, d: 1.4, x: 780, y: 560, z: 1.45 },
+      { t: 15, d: 1.5, x: 770, y: 360, z: 2.6 }]);
+    W.pulse(this.sunr, t < 5 ? t : -1, 0.8, 30);
+    W.pulse(this.dotr, t >= 5.6 && t < 10 ? t : -1, 5.6, 10);
+    const w = t >= 10.5 && t < 15.2 ? 0.55 + 0.45 * Math.sin((t - 10.5) * 3) : 0;
+    this.winr.style.opacity = Math.max(0, w * eo(seg(t, 10.5, 11)) * (1 - seg(t, 14.8, 15.2))).toFixed(3);
+    this.sq1.style.opacity = eo(seg(t, 16.4, 16.8));
+    this.sq2.style.opacity = eo(seg(t, 17.1, 17.5));
+    const f = eob(seg(t, 17.8, 18.4), 1.6);
+    this.br.style.opacity = W.cl(f);
+    this.ft.style.opacity = W.cl(f);
+    W.head(this.head, t);
+    W.steps(this.steps, t, [-0.6, 5, 10, 15]);
+  },
+});
+})(makeKit("tour"));
+(function (kit) {
+const { seg, eo, eob } = kit;
+Object.assign(W, {
+  // A pencil whose point sits at (0,0), body up and to the right. body: the barrel color, lead: the mark color.
+  pencil(cls, body, lead) {
+    return '<g class="' + cls + '" style="opacity:0"><g transform="scale(1.5)">' +
+      '<path d="M0 0 L5 -15 L15 -5 Z" style="fill:var(--wallc);stroke:var(--second);stroke-width:1.2"/>' +
+      '<path d="M0 0 L2 -6 L6 -2 Z" style="fill:var(' + lead + ')"/>' +
+      '<path d="M5 -15 L45 -55 L55 -45 L15 -5 Z" style="fill:var(' + body + ');stroke:var(--second);stroke-width:1.2"/>' +
+      '<path d="M10 -10 L50 -50" style="stroke:color-mix(in srgb, var(--ground) 45%, transparent);stroke-width:2"/>' +
+      '<path d="M45 -55 L51 -61 L61 -51 L55 -45 Z" style="fill:var(--roofL);stroke:var(--second);stroke-width:1.2"/>' +
+      '<path d="M51 -61 Q56 -68 63 -63 Q68 -56 61 -51 Z" style="fill:color-mix(in srgb, var(--accent) 35%, var(--main));stroke:var(--second);stroke-width:1.2"/></g></g>';
+  },
+  // Moves a pencil to (x, y) with a little tilt, shown at opacity o.
+  hold(el, x, y, o, t) {
+    el.setAttribute('transform', 'translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ') rotate(' + (2 * Math.sin(t * 5)).toFixed(2) + ')');
+    el.style.opacity = W.cl(o).toFixed(3);
+  },
+});
+kit.scene('one-over', {
+  init(kit) {
+    const over = '<rect class="one-over-sq1" x="815" y="305" width="35" height="35" style="fill:var(--sunW);opacity:0"/><rect class="one-over-sq2" x="780" y="305" width="35" height="35" style="fill:var(--sunW);opacity:0"/>' +
+      '<line class="one-over-arm" style="stroke:var(--pencil);stroke-width:7;stroke-linecap:round;opacity:0"/>' +
+      '<circle class="one-over-tip" cx="780" cy="340" r="6" style="fill:var(--second);opacity:0"/>' + W.ring('one-over-tipr', 780, 340) +
+      W.pencil('one-over-pen', 'accent', '--pencil');
+    const html = W.lab('1', 832, 322, 'c tag one-over-n1', 'opacity:0') + W.lab('2', 797, 322, 'c tag one-over-n2', 'opacity:0') +
+      W.lab('1 ft overhang', 815, 384, 'c tag one-over-lab', 'opacity:0');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('one-over', { over, html }) +
+      W.panel('Test 1: Pencil', 'pencil', 'Draw a 1 ft overhang', [
+        'From the dot, count 2 small squares toward the south (to the left).',
+        'Draw the overhang straight out from the dot, level, in pencil. Its end is the tip.']) + '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    Object.assign(this, { dg: q('.one-over-dg'), sq1: q('.one-over-sq1'), sq2: q('.one-over-sq2'), n1: q('.one-over-n1'), n2: q('.one-over-n2'),
+      arm: q('.one-over-arm'), tip: q('.one-over-tip'), tipr: q('.one-over-tipr'), pen: q('.one-over-pen'), lab: q('.one-over-lab'), head: q('.pn-w') });
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    W.cam(this.dg, t, [{ x: 770, y: 360, z: 2.6 }, { t: 5.2, d: 1.2, x: 790, y: 360, z: 2.9 }]);
+    const s1 = eo(seg(t, 1.3, 1.7)), s2 = eo(seg(t, 2.6, 3.0));
+    const fade = 1 - seg(t, 7.2, 7.8);
+    this.sq1.style.opacity = s1 * fade; this.n1.style.opacity = s1 * fade;
+    this.sq2.style.opacity = s2 * fade; this.n2.style.opacity = s2 * fade;
+    const d = W.ease(seg(t, 5.6, 7.0));
+    W.draw(this.arm, 850, 340, 780, 340, d);
+    W.hold(this.pen, 850 - 70 * d, 340, seg(t, 5.0, 5.5) * (1 - seg(t, 7.3, 7.8)), t);
+    this.tip.style.opacity = W.cl(eob(seg(t, 7.0, 7.4), 1.6));
+    W.pulse(this.tipr, t, 7.4, 8);
+    this.lab.style.opacity = eo(seg(t, 7.6, 8.1));
+    W.head(this.head, t);
+    W.steps(this.steps, t, [-0.6, 4.6]);
+  },
+});
+})(makeKit("one-over"));
+(function (kit) {
+const { seg, eo, eob, lerp } = kit;
+const OJ = { deg: 71, L: 1, R: 55 };
+kit.scene('one-june', {
+  init(kit) {
+    const h = W.hit(OJ.L, OJ.deg);
+    this.h = h;
+    const a = OJ.deg * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+    this.exy = [h.tx - 200 * ux, h.ty - 200 * uy];
+    this.ext = this.exy;
+    const over = W.done([{ L: 1, col: '--pencil', degs: [] }]) +
+      '<g class="one-june-pro" style="opacity:0">' + W.prot('one-june-prot', OJ.R) +
+      '<path class="one-june-arc" style="fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round"/>' +
+      '<line class="one-june-ray" x1="0" y1="0" style="stroke:var(--main);stroke-width:2.5;stroke-dasharray:5 4"/></g>' +
+      '<line class="one-june-mark" x1="' + (h.tx + OJ.R * 1.06 * ux).toFixed(1) + '" y1="' + (h.ty + OJ.R * 1.06 * uy).toFixed(1) + '" x2="' + (h.tx + OJ.R * 1.28 * ux).toFixed(1) + '" y2="' + (h.ty + OJ.R * 1.28 * uy).toFixed(1) + '" style="stroke:var(--second);stroke-width:4;stroke-linecap:round;opacity:0"/>' +
+      '<line class="one-june-ext" style="stroke:var(--sunE);stroke-width:3;stroke-dasharray:8 8;opacity:0"/>' +
+      '<circle class="one-june-sun" cx="' + this.ext[0].toFixed(1) + '" cy="' + this.ext[1].toFixed(1) + '" r="15" style="fill:var(--accent);stroke:var(--sunE);stroke-width:2;opacity:0"/>' +
+      '<line class="one-june-line" style="stroke:var(--pencil);stroke-width:4;stroke-linecap:round;opacity:0"/>' +
+      '<circle class="one-june-end" cx="' + h.ex + '" cy="' + h.ey.toFixed(1) + '" r="6" style="fill:var(--pencil);opacity:0"/>' + W.ring('one-june-endr', h.ex, h.ey.toFixed(1)) +
+      W.pencil('one-june-pen', 'accent', '--pencil');
+    const html = W.lab('71°', 0, 0, 'c tag tag-sun one-june-deg', 'opacity:0') + W.lab('June 71°', 758, 478, 'c tag one-june-tag', 'opacity:0');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('one-june', { over, html }) +
+      W.panel('Test 1: Pencil', 'pencil', 'The June line', [
+        'Put the center of your protractor on the tip of the overhang. Keep the flat edge level.',
+        'Measure 71° down from level. Make a small mark at 71°.',
+        'Draw the June noon sunlight line from the tip through your mark to the wall. Sunlight comes down at the same angle the Sun is above the horizon.']) + '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    Object.assign(this, { dg: q('.one-june-dg'), pro: q('.one-june-pro'), arc: q('.one-june-arc'), ray: q('.one-june-ray'), mark: q('.one-june-mark'),
+      ext: q('.one-june-ext'), sun: q('.one-june-sun'), line: q('.one-june-line'), end: q('.one-june-end'), endr: q('.one-june-endr'),
+      pen: q('.one-june-pen'), deg: q('.one-june-deg'), tag: q('.one-june-tag'), head: q('.pn-w') });
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    const h = this.h, a = OJ.deg * Math.PI / 180;
+    W.cam(this.dg, t, [{ x: 790, y: 360, z: 2.9 }, { t: 0.6, d: 1.4, x: 790, y: 370, z: 2.7 }, { t: 12.4, d: 1.6, x: 770, y: 430, z: 1.8 }]);
+    // The protractor glides in and settles on the tip.
+    const m = eob(seg(t, 1.0, 3.0), 1.5), out = seg(t, 12.2, 12.8);
+    const px = lerp(690, h.tx, m), py = lerp(470, h.ty, m), rot = lerp(-24, 0, m);
+    this.pro.setAttribute('transform', 'translate(' + px.toFixed(1) + ' ' + py.toFixed(1) + ') rotate(' + rot.toFixed(2) + ')');
+    this.pro.style.opacity = (eo(seg(t, 1.0, 1.6)) * (1 - out)).toFixed(3);
+    // Measure down from level.
+    const sw = OJ.deg * W.ease(seg(t, 7.0, 9.6));
+    this.arc.setAttribute('d', sw > 0.3 ? W.arc(34, sw) : 'M0 0');
+    const ra = sw * Math.PI / 180;
+    this.ray.setAttribute('x2', (OJ.R * Math.cos(ra)).toFixed(2)); this.ray.setAttribute('y2', (OJ.R * Math.sin(ra)).toFixed(2));
+    this.ray.style.opacity = sw > 0.3 ? 1 : 0;
+    const da = ra / 2;
+    this.deg.style.left = (h.tx + 46 * Math.cos(da) + 8).toFixed(1) + 'px';
+    this.deg.style.top = (h.ty + 46 * Math.sin(da) + 4).toFixed(1) + 'px';
+    this.deg.style.opacity = (eo(seg(t, 9.2, 9.7)) * (1 - out)).toFixed(3);
+    this.mark.style.opacity = W.cl(eob(seg(t, 10.0, 10.4), 1.6)) * (1 - seg(t, 15.5, 16));
+    // Draw the line, then show where the light comes from.
+    const d = W.ease(seg(t, 12.9, 14.7));
+    W.draw(this.line, h.tx, h.ty, h.ex, h.ey, d);
+    W.hold(this.pen, lerp(h.tx, h.ex, d), lerp(h.ty, h.ey, d), seg(t, 12.4, 12.9) * (1 - seg(t, 14.9, 15.4)), t);
+    this.end.style.opacity = W.cl(eob(seg(t, 14.7, 15.1), 1.6));
+    W.pulse(this.endr, t, 15.1, 8);
+    W.draw(this.ext, h.tx, h.ty, this.exy[0], this.exy[1], W.ease(seg(t, 15.6, 17.0)));
+    this.ext.style.opacity = seg(t, 15.6, 15.8) * 0.9;
+    const sb = 1 + 0.06 * Math.sin(t * 2.4);
+    this.sun.setAttribute('transform', 'translate(' + this.exy[0].toFixed(1) + ' ' + this.exy[1].toFixed(1) + ') scale(' + (W.cl(eob(seg(t, 16.8, 17.3), 1.7)) * sb).toFixed(3) + ') translate(' + (-this.exy[0]).toFixed(1) + ' ' + (-this.exy[1]).toFixed(1) + ')');
+    this.sun.style.opacity = seg(t, 16.8, 17.0);
+    this.tag.style.opacity = eo(seg(t, 15.0, 15.5));
+    W.head(this.head, t);
+    W.steps(this.steps, t, [-0.6, 6, 12]);
+  },
+});
+})(makeKit("one-june"));
+(function (kit) {
+const { seg, eo, eob } = kit;
+kit.scene('one-check', {
+  init(kit) {
+    const h = W.hit(1, 71);
+    this.h = h;
+    const over = W.done([{ L: 1, col: '--pencil', degs: [71] }]) + W.ring('one-check-r', h.ex, h.ey.toFixed(1)) +
+      '<line class="one-check-guide" style="stroke:var(--main);stroke-width:3;stroke-dasharray:10 8;opacity:0"/>' +
+      '<rect class="one-check-axis" x="104" y="' + (h.ey - 22).toFixed(1) + '" width="44" height="44" rx="10" style="fill:none;stroke:var(--main);stroke-width:4;opacity:0"/>' +
+      W.lightSvg('one-check');
+    const html = W.lab('June 71°', 758, 478, 'c tag') + W.lab('In shade', 878, 452, 'l tag one-check-sh', 'opacity:0') + W.lab('In sun', 878, 640, 'l tag tag-sun one-check-su', 'opacity:0');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('one-check', { over, html }) +
+      W.panel('Test 1: Pencil', 'pencil', 'Check the window', [
+        'Read the height where your line hits the wall. Write it in the June column of your table.',
+        'Sunlight reaches the part of the window below the line. The part above the line is in shade. Is the window in sun: all, some, or none?']) + '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    Object.assign(this, { dg: q('.one-check-dg'), r: q('.one-check-r'), guide: q('.one-check-guide'), axis: q('.one-check-axis'),
+      sun: q('.one-check-sun'), shade: q('.one-check-shade'), sh: q('.one-check-sh'), su: q('.one-check-su'), head: q('.pn-w') });
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    const h = this.h;
+    W.cam(this.dg, t, [{ x: 770, y: 430, z: 1.8 }, { t: 0.5, d: 1.6, x: 500, y: 500, z: 1.3 }, { t: 6.0, d: 1.5, x: 800, y: 540, z: 1.7 }]);
+    W.pulse(this.r, t < 6 ? t : -1, 0.3, 8);
+    W.draw(this.guide, h.ex, h.ey, 150, h.ey, W.ease(seg(t, 2.0, 3.4)));
+    this.guide.style.opacity = seg(t, 2.0, 2.1) * (1 - seg(t, 6.0, 6.5));
+    const ax = eob(seg(t, 3.4, 3.8), 1.6);
+    this.axis.style.opacity = W.cl(ax) * (1 - seg(t, 6.0, 6.5));
+    W.light(this.sun, this.shade, h.ey, eo(seg(t, 7.0, 7.8)) * (0.85 + 0.15 * Math.sin(t * 2)));
+    this.sh.style.opacity = eo(seg(t, 7.8, 8.3));
+    this.su.style.opacity = eo(seg(t, 8.2, 8.7));
+    W.head(this.head, t);
+    W.steps(this.steps, t, [-0.6, 6]);
+  },
+});
+})(makeKit("one-check"));
+(function (kit) {
+const { seg, eo, eob, lerp } = kit;
+kit.scene('one-dec', {
+  init(kit) {
+    const h = W.hit(1, 24), R = 55;
+    this.h = h; this.R = R;
+    const a = 24 * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+    const over = W.done([{ L: 1, col: '--pencil', degs: [71] }]) +
+      '<g class="one-dec-pro" style="opacity:0">' + W.prot('one-dec-prot', R) +
+      '<path class="one-dec-arc" style="fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round"/>' +
+      '<line class="one-dec-ray" x1="0" y1="0" style="stroke:var(--main);stroke-width:2.5;stroke-dasharray:5 4"/></g>' +
+      '<line class="one-dec-mark" x1="' + (h.tx + R * 1.06 * ux).toFixed(1) + '" y1="' + (h.ty + R * 1.06 * uy).toFixed(1) + '" x2="' + (h.tx + R * 1.28 * ux).toFixed(1) + '" y2="' + (h.ty + R * 1.28 * uy).toFixed(1) + '" style="stroke:var(--second);stroke-width:4;stroke-linecap:round;opacity:0"/>' +
+      '<line class="one-dec-line" style="stroke:var(--pencil);stroke-width:4;stroke-linecap:round;opacity:0"/>' +
+      '<circle class="one-dec-end" cx="' + h.ex + '" cy="' + h.ey.toFixed(1) + '" r="6" style="fill:var(--pencil);opacity:0"/>' + W.ring('one-dec-endr', h.ex, h.ey.toFixed(1)) +
+      W.lightSvg('one-dec') + W.pencil('one-dec-pen', 'accent', '--pencil');
+    const html = W.lab('24°', 0, 0, 'c tag tag-sun one-dec-deg', 'opacity:0') + W.lab('June 71°', 758, 478, 'c tag one-dec-jt') +
+      W.lab('December 24°', 778, 412, 'c tag one-dec-tag', 'opacity:0') + W.lab('In sun', 878, 600, 'l tag tag-sun one-dec-su', 'opacity:0');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('one-dec', { over, html }) +
+      W.panel('Test 1: Pencil', 'pencil', 'The December line', [
+        'Do the same at 24° for December: protractor on the tip, flat edge level, measure 24° down, then draw the line to the wall.',
+        'Check the window again. Record where the December line hits the wall and how much of the window is in sun.']) + '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    Object.assign(this, { dg: q('.one-dec-dg'), pro: q('.one-dec-pro'), arc: q('.one-dec-arc'), ray: q('.one-dec-ray'), mark: q('.one-dec-mark'),
+      line: q('.one-dec-line'), end: q('.one-dec-end'), endr: q('.one-dec-endr'), sun: q('.one-dec-sun'), shade: q('.one-dec-shade'),
+      pen: q('.one-dec-pen'), deg: q('.one-dec-deg'), tag: q('.one-dec-tag'), jt: q('.one-dec-jt'), su: q('.one-dec-su'), head: q('.pn-w') });
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    const h = this.h, R = this.R;
+    W.cam(this.dg, t, [{ x: 800, y: 540, z: 1.7 }, { t: 0.2, d: 1.5, x: 790, y: 365, z: 2.7 }, { t: 7.0, d: 1.5, x: 800, y: 530, z: 1.7 }]);
+    this.jt.style.opacity = 1 - seg(t, 0.2, 0.8) + seg(t, 7.2, 7.8);
+    const m = eob(seg(t, 0.9, 2.3), 1.5), out = seg(t, 5.0, 5.5);
+    this.pro.setAttribute('transform', 'translate(' + lerp(700, h.tx, m).toFixed(1) + ' ' + lerp(450, h.ty, m).toFixed(1) + ') rotate(' + lerp(-20, 0, m).toFixed(2) + ')');
+    this.pro.style.opacity = (eo(seg(t, 0.9, 1.4)) * (1 - out)).toFixed(3);
+    const sw = 24 * W.ease(seg(t, 2.6, 4.0)), ra = sw * Math.PI / 180;
+    this.arc.setAttribute('d', sw > 0.3 ? W.arc(34, sw) : 'M0 0');
+    this.ray.setAttribute('x2', (R * Math.cos(ra)).toFixed(2)); this.ray.setAttribute('y2', (R * Math.sin(ra)).toFixed(2));
+    this.ray.style.opacity = sw > 0.3 ? 1 : 0;
+    this.deg.style.left = (h.tx + 50 * Math.cos(ra / 2) + 14).toFixed(1) + 'px';
+    this.deg.style.top = (h.ty + 50 * Math.sin(ra / 2) + 2).toFixed(1) + 'px';
+    this.deg.style.opacity = (eo(seg(t, 3.7, 4.1)) * (1 - out)).toFixed(3);
+    this.mark.style.opacity = W.cl(eob(seg(t, 4.2, 4.6), 1.6)) * (1 - seg(t, 7.0, 7.5));
+    const d = W.ease(seg(t, 5.4, 6.5));
+    W.draw(this.line, h.tx, h.ty, h.ex, h.ey, d);
+    W.hold(this.pen, lerp(h.tx, h.ex, d), lerp(h.ty, h.ey, d), seg(t, 5.0, 5.4) * (1 - seg(t, 6.7, 7.1)), t);
+    this.end.style.opacity = W.cl(eob(seg(t, 6.5, 6.9), 1.6));
+    W.pulse(this.endr, t, 6.9, 8);
+    this.tag.style.opacity = eo(seg(t, 6.7, 7.2));
+    W.light(this.sun, this.shade, h.ey, eo(seg(t, 8.6, 9.4)) * (0.85 + 0.15 * Math.sin(t * 2)));
+    this.su.style.opacity = eo(seg(t, 9.4, 9.9));
+    W.head(this.head, t);
+    W.steps(this.steps, t, [-0.6, 7]);
+  },
+});
+})(makeKit("one-dec"));
+(function (kit) {
+const { seg, eo, eob, lerp } = kit;
+kit.scene('three', {
+  init(kit) {
+    const R = 55, J = W.hit(3, 71), D = W.hit(3, 24);
+    Object.assign(this, { R, J, D });
+    const mk = (cls, deg) => { const a = deg * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+      return '<line class="' + cls + '" x1="' + (640 + R * 1.06 * ux).toFixed(1) + '" y1="' + (340 + R * 1.06 * uy).toFixed(1) + '" x2="' + (640 + R * 1.28 * ux).toFixed(1) + '" y2="' + (340 + R * 1.28 * uy).toFixed(1) + '" style="stroke:var(--second);stroke-width:4;stroke-linecap:round;opacity:0"/>'; };
+    let sq = '';
+    for (let i = 0; i < 6; i++) sq += '<rect class="three-sq" x="' + (815 - 35 * i) + '" y="305" width="35" height="35" style="fill:var(--sunW);opacity:0"/>';
+    const over = W.done([{ L: 1, col: '--pencil', degs: [71, 24], o: 0.45 }]) + sq +
+      '<line class="three-arm" style="stroke:var(--main);stroke-width:7;stroke-linecap:round;opacity:0"/>' +
+      '<circle class="three-tip" cx="640" cy="340" r="6" style="fill:var(--main);opacity:0"/>' +
+      '<g class="three-pro" style="opacity:0">' + W.prot('three-prot', R) +
+      '<path class="three-arc" style="fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round"/>' +
+      '<line class="three-ray" x1="0" y1="0" style="stroke:var(--main);stroke-width:2.5;stroke-dasharray:5 4"/></g>' +
+      mk('three-mj', 71) + mk('three-md', 24) +
+      '<line class="three-lj" style="stroke:var(--main);stroke-width:4;stroke-linecap:round;opacity:0"/>' +
+      '<line class="three-ld" style="stroke:var(--main);stroke-width:4;stroke-linecap:round;opacity:0"/>' +
+      '<circle class="three-ej" cx="' + J.ex.toFixed(1) + '" cy="900" r="7" style="fill:var(--main);opacity:0"/>' + W.ring('three-ejr', J.ex.toFixed(1), 900) +
+      '<circle class="three-ed" cx="850" cy="' + D.ey.toFixed(1) + '" r="6" style="fill:var(--main);opacity:0"/>' + W.ring('three-edr', 850, D.ey.toFixed(1)) +
+      W.lightSvg('three') + W.pencil('three-pen', 'main', '--main');
+    const html = W.lab('3 ft overhang', 728, 286, 'c tag tag-blue three-ft', 'opacity:0') + W.lab('', 0, 0, 'c tag tag-sun three-deg', 'opacity:0') +
+      W.lab('June 71°', 640, 650, 'c tag tag-blue three-jt', 'opacity:0') + W.lab('Hits the ground first', 880, 862, 'l tag tag-blue three-gt', 'opacity:0') +
+      W.lab('December 24°', 700, 418, 'c tag tag-blue three-dt', 'opacity:0') + W.lab('In sun', 878, 600, 'l tag tag-sun three-su', 'opacity:0') + W.lab('In shade', 878, 420, 'l tag three-sh', 'opacity:0');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('three', { over, html }) +
+      W.panel('Test 2: Colored pencil 1', 'blue', 'Test a 3 ft overhang', [
+        'Switch to your first colored pencil. Count 6 small squares from the dot and draw a 3 ft overhang.',
+        'June: put the protractor on the new tip, measure 71° down, and draw the line toward the wall.',
+        'This line hits the ground before it reaches the wall. Write “ground” in your table.',
+        'December: measure 24° down from the same tip and draw the line to the wall. Then check the window.']) + '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    Object.assign(this, { dg: q('.three-dg'), sq: [...kit.stage.querySelectorAll('.three-sq')], arm: q('.three-arm'), tip: q('.three-tip'), pro: q('.three-pro'),
+      arc: q('.three-arc'), ray: q('.three-ray'), mj: q('.three-mj'), md: q('.three-md'), lj: q('.three-lj'), ld: q('.three-ld'), ej: q('.three-ej'), ejr: q('.three-ejr'),
+      ed: q('.three-ed'), edr: q('.three-edr'), sun: q('.three-sun'), shade: q('.three-shade'), pen: q('.three-pen'), ft: q('.three-ft'), deg: q('.three-deg'),
+      jt: q('.three-jt'), gt: q('.three-gt'), dt: q('.three-dt'), su: q('.three-su'), sh: q('.three-sh'), head: q('.pn-w') });
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    const { R, J, D } = this;
+    W.cam(this.dg, t, [{ x: 640, y: 560, z: 0.99 }, { t: 0.3, d: 1.5, x: 720, y: 390, z: 2.0 },
+      { t: 11.0, d: 1.5, x: 740, y: 610, z: 1.15 }, { t: 18.8, d: 1.5, x: 750, y: 430, z: 1.75 }]);
+    // Count six squares, then draw the overhang.
+    this.sq.forEach((el, i) => { el.style.opacity = eo(seg(t, 1.3 + 0.4 * i, 1.6 + 0.4 * i)) * (1 - seg(t, 6.2, 6.8)); });
+    const a = W.ease(seg(t, 4.1, 5.8));
+    W.draw(this.arm, 850, 340, 640, 340, a);
+    this.tip.style.opacity = W.cl(eob(seg(t, 5.8, 6.2), 1.6));
+    this.ft.style.opacity = eo(seg(t, 3.8, 4.2)) * (1 - seg(t, 6.6, 7.0));
+    // One protractor, used twice: June, then December.
+    const dec = t >= 18.5, deg = dec ? 24 : 71;
+    const m = dec ? eob(seg(t, 19.3, 20.5), 1.5) : eob(seg(t, 6.9, 8.3), 1.5);
+    const op = dec ? eo(seg(t, 19.3, 19.8)) * (1 - seg(t, 22.0, 22.5)) : eo(seg(t, 6.9, 7.4)) * (1 - seg(t, 11.0, 11.5));
+    this.pro.setAttribute('transform', 'translate(' + lerp(560, 640, m).toFixed(1) + ' ' + lerp(465, 340, m).toFixed(1) + ') rotate(' + lerp(-22, 0, m).toFixed(2) + ')');
+    this.pro.style.opacity = op.toFixed(3);
+    const sw = deg * W.ease(dec ? seg(t, 20.6, 21.8) : seg(t, 8.6, 10.2)), ra = sw * Math.PI / 180;
+    this.arc.setAttribute('d', sw > 0.3 ? W.arc(34, sw) : 'M0 0');
+    this.ray.setAttribute('x2', (R * Math.cos(ra)).toFixed(2)); this.ray.setAttribute('y2', (R * Math.sin(ra)).toFixed(2));
+    this.ray.style.opacity = sw > 0.3 ? 1 : 0;
+    this.deg.textContent = deg + '°';
+    this.deg.style.left = (640 + 50 * Math.cos(ra / 2) + (dec ? 14 : 8)).toFixed(1) + 'px';
+    this.deg.style.top = (340 + 50 * Math.sin(ra / 2) + 3).toFixed(1) + 'px';
+    this.deg.style.opacity = (eo(seg(t, dec ? 21.5 : 9.8, dec ? 21.9 : 10.2)) * op).toFixed(3);
+    this.mj.style.opacity = W.cl(eob(seg(t, 10.4, 10.8), 1.6)) * (1 - seg(t, 13.5, 14));
+    this.md.style.opacity = W.cl(eob(seg(t, 21.9, 22.3), 1.6)) * (1 - seg(t, 24, 24.5));
+    // The lines.
+    const dj = W.ease(seg(t, 11.5, 13.1)), dd = W.ease(seg(t, 22.4, 23.5));
+    W.draw(this.lj, 640, 340, J.ex, J.ey, dj);
+    W.draw(this.ld, 640, 340, D.ex, D.ey, dd);
+    let px = 850 - 210 * a, py = 340, po = seg(t, 3.7, 4.1) * (1 - seg(t, 5.9, 6.3));
+    if (t > 9) { px = lerp(640, J.ex, dj); py = lerp(340, J.ey, dj); po = seg(t, 11.1, 11.5) * (1 - seg(t, 13.3, 13.7)); }
+    if (t > 18) { px = lerp(640, D.ex, dd); py = lerp(340, D.ey, dd); po = seg(t, 22.0, 22.4) * (1 - seg(t, 23.7, 24.1)); }
+    W.hold(this.pen, px, py, po, t);
+    this.ej.style.opacity = W.cl(eob(seg(t, 13.1, 13.5), 1.6));
+    W.pulse(this.ejr, t < 19 ? t : -1, 13.8, 9);
+    this.jt.style.opacity = eo(seg(t, 13.0, 13.5));
+    this.gt.style.opacity = eo(seg(t, 14.2, 14.7)) * (1 - seg(t, 18.6, 19.0));
+    this.ed.style.opacity = W.cl(eob(seg(t, 23.5, 23.9), 1.6));
+    W.pulse(this.edr, t, 23.9, 8);
+    this.dt.style.opacity = eo(seg(t, 23.6, 24.0));
+    W.light(this.sun, this.shade, D.ey, eo(seg(t, 24.2, 24.9)) * (0.85 + 0.15 * Math.sin(t * 2)));
+    this.su.style.opacity = eo(seg(t, 24.8, 25.2));
+    this.sh.style.opacity = eo(seg(t, 25.0, 25.4));
+    W.head(this.head, t);
+    W.steps(this.steps, t, [-0.6, 6.5, 13.5, 19]);
+  },
+});
+})(makeKit("three"));
+(function (kit) {
+const { seg, eo, eob, lerp } = kit;
+kit.scene('design', {
+  init(kit) {
+    const R = 55, J = W.hit(2, 71), D = W.hit(2, 24);
+    Object.assign(this, { R, J, D });
+    const mk = (cls, deg) => { const a = deg * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+      return '<line class="' + cls + '" x1="' + (710 + R * 1.06 * ux).toFixed(1) + '" y1="' + (340 + R * 1.06 * uy).toFixed(1) + '" x2="' + (710 + R * 1.28 * ux).toFixed(1) + '" y2="' + (340 + R * 1.28 * uy).toFixed(1) + '" style="stroke:var(--second);stroke-width:4;stroke-linecap:round;opacity:0"/>'; };
+    let sq = '';
+    for (let i = 0; i < 4; i++) sq += '<rect class="design-sq" x="' + (815 - 35 * i) + '" y="305" width="35" height="35" style="fill:var(--sunW);opacity:0"/>';
+    const zone = (cls, y, h) => '<rect class="' + cls + '" x="836" y="' + y + '" width="28" height="' + h + '" rx="4" style="fill:color-mix(in srgb, var(--green) 40%, transparent);stroke:var(--green);stroke-width:3;opacity:0"/>';
+    const over = W.done([{ L: 1, col: '--pencil', degs: [71, 24], o: 0.35 }, { L: 3, col: '--main', degs: [71, 24], o: 0.35 }]) + sq +
+      zone('design-lo', 690, 210) + zone('design-hi', 342, 68) +
+      '<line class="design-arm" style="stroke:var(--green);stroke-width:7;stroke-linecap:round;opacity:0"/>' +
+      '<circle class="design-tip" cx="710" cy="340" r="6" style="fill:var(--green);opacity:0"/>' +
+      '<g class="design-pro" style="opacity:0">' + W.prot('design-prot', R) +
+      '<path class="design-arc" style="fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round"/>' +
+      '<line class="design-ray" x1="0" y1="0" style="stroke:var(--main);stroke-width:2.5;stroke-dasharray:5 4"/></g>' +
+      mk('design-mj', 71) + mk('design-md', 24) +
+      '<line class="design-lj" style="stroke:var(--green);stroke-width:4.5;stroke-linecap:round;opacity:0"/>' +
+      '<line class="design-ld" style="stroke:var(--green);stroke-width:4.5;stroke-linecap:round;opacity:0"/>' +
+      '<circle class="design-ej" cx="850" cy="' + J.ey.toFixed(1) + '" r="6.5" style="fill:var(--green);opacity:0"/>' + W.ring('design-ejr', 850, J.ey.toFixed(1), '--green') +
+      '<circle class="design-ed" cx="850" cy="' + D.ey.toFixed(1) + '" r="6.5" style="fill:var(--green);opacity:0"/>' + W.ring('design-edr', 850, D.ey.toFixed(1), '--green') +
+      W.lightSvg('design-jl') + W.lightSvg('design-dl') + W.pencil('design-pen', 'green', '--green');
+    const html = W.lab('2 ft overhang', 760, 286, 'c tag tag-green design-ft', 'opacity:0') + W.lab('', 0, 0, 'c tag tag-sun design-deg', 'opacity:0') +
+      W.lab('June 71°', 700, 640, 'c tag tag-green design-jt', 'opacity:0') + W.lab('December 24°', 742, 410, 'c tag tag-green design-dt', 'opacity:0') +
+      W.lab('No sun on the window', 878, 600, 'l tag design-ns', 'opacity:0;max-width:260px') + W.lab('Whole window in sun', 878, 600, 'l tag tag-sun design-as', 'opacity:0;max-width:260px');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('design', { over, html }) +
+      W.panel('Your design: Colored pencil 2', 'green', 'Design: a 2 ft overhang', [
+        'Switch to your second colored pencil. Try a 2 ft overhang: count 4 small squares from the dot and draw it.',
+        'June: put the protractor on the new tip, measure 71° down, and draw the line to the wall.',
+        'The June line lands below the window, so the window gets no direct summer sun.',
+        'December: measure 24° down from the same tip and draw the line to the wall.',
+        'The December line lands above the window, so the whole window gets winter sun. This design works in June and December.']) + '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    Object.assign(this, { dg: q('.design-dg'), sq: [...kit.stage.querySelectorAll('.design-sq')], lo: q('.design-lo'), hi: q('.design-hi'), arm: q('.design-arm'), tip: q('.design-tip'),
+      pro: q('.design-pro'), arc: q('.design-arc'), ray: q('.design-ray'), mj: q('.design-mj'), md: q('.design-md'), lj: q('.design-lj'), ld: q('.design-ld'),
+      ej: q('.design-ej'), ejr: q('.design-ejr'), ed: q('.design-ed'), edr: q('.design-edr'), jsun: q('.design-jl-sun'), jsh: q('.design-jl-shade'),
+      dsun: q('.design-dl-sun'), dsh: q('.design-dl-shade'), pen: q('.design-pen'), ft: q('.design-ft'), deg: q('.design-deg'), jt: q('.design-jt'), dt: q('.design-dt'),
+      ns: q('.design-ns'), as: q('.design-as'), head: q('.pn-w') });
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    const { R, J, D } = this;
+    W.cam(this.dg, t, [{ x: 640, y: 560, z: 0.99 }, { t: 0.3, d: 1.5, x: 740, y: 390, z: 2.1 },
+      { t: 10.9, d: 1.5, x: 770, y: 570, z: 1.3 }, { t: 18.8, d: 1.5, x: 760, y: 420, z: 1.9 }, { t: 24.4, d: 1.5, x: 790, y: 560, z: 1.35 }]);
+    // Count four squares, then draw the overhang.
+    this.sq.forEach((el, i) => { el.style.opacity = eo(seg(t, 1.2 + 0.4 * i, 1.5 + 0.4 * i)) * (1 - seg(t, 6.0, 6.6)); });
+    this.ft.style.opacity = eo(seg(t, 2.9, 3.3)) * (1 - seg(t, 6.4, 6.9));
+    const a = W.ease(seg(t, 3.6, 5.0));
+    W.draw(this.arm, 850, 340, 710, 340, a);
+    this.tip.style.opacity = W.cl(eob(seg(t, 5.0, 5.4), 1.6));
+    // The protractor, June then December.
+    const dec = t >= 18.5, deg = dec ? 24 : 71;
+    const m = dec ? eob(seg(t, 19.3, 20.5), 1.5) : eob(seg(t, 7.0, 8.4), 1.5);
+    const op = dec ? eo(seg(t, 19.3, 19.8)) * (1 - seg(t, 22.0, 22.5)) : eo(seg(t, 7.0, 7.5)) * (1 - seg(t, 10.9, 11.4));
+    this.pro.setAttribute('transform', 'translate(' + lerp(620, 710, m).toFixed(1) + ' ' + lerp(465, 340, m).toFixed(1) + ') rotate(' + lerp(-22, 0, m).toFixed(2) + ')');
+    this.pro.style.opacity = op.toFixed(3);
+    const sw = deg * W.ease(dec ? seg(t, 20.6, 21.8) : seg(t, 8.6, 10.2)), ra = sw * Math.PI / 180;
+    this.arc.setAttribute('d', sw > 0.3 ? W.arc(34, sw) : 'M0 0');
+    this.ray.setAttribute('x2', (R * Math.cos(ra)).toFixed(2)); this.ray.setAttribute('y2', (R * Math.sin(ra)).toFixed(2));
+    this.ray.style.opacity = sw > 0.3 ? 1 : 0;
+    this.deg.textContent = deg + '°';
+    this.deg.style.left = (710 + 50 * Math.cos(ra / 2) + (dec ? 14 : 8)).toFixed(1) + 'px';
+    this.deg.style.top = (340 + 50 * Math.sin(ra / 2) + 3).toFixed(1) + 'px';
+    this.deg.style.opacity = (eo(seg(t, dec ? 21.5 : 9.8, dec ? 21.9 : 10.2)) * op).toFixed(3);
+    this.mj.style.opacity = W.cl(eob(seg(t, 10.4, 10.8), 1.6)) * (1 - seg(t, 13.5, 14));
+    this.md.style.opacity = W.cl(eob(seg(t, 21.9, 22.3), 1.6)) * (1 - seg(t, 24.4, 24.9));
+    // The lines.
+    const dj = W.ease(seg(t, 11.4, 13.0)), dd = W.ease(seg(t, 22.4, 23.4));
+    W.draw(this.lj, 710, 340, J.ex, J.ey, dj);
+    W.draw(this.ld, 710, 340, D.ex, D.ey, dd);
+    let px = 850 - 140 * a, py = 340, po = seg(t, 3.3, 3.6) * (1 - seg(t, 5.1, 5.5));
+    if (t > 9) { px = lerp(710, J.ex, dj); py = lerp(340, J.ey, dj); po = seg(t, 11.0, 11.4) * (1 - seg(t, 13.2, 13.6)); }
+    if (t > 18) { px = lerp(710, D.ex, dd); py = lerp(340, D.ey, dd); po = seg(t, 22.0, 22.4) * (1 - seg(t, 23.6, 24.0)); }
+    W.hold(this.pen, px, py, po, t);
+    this.ej.style.opacity = W.cl(eob(seg(t, 13.0, 13.4), 1.6));
+    W.pulse(this.ejr, t < 19 ? t : -1, 13.6, 8);
+    this.jt.style.opacity = eo(seg(t, 13.0, 13.5));
+    this.ed.style.opacity = W.cl(eob(seg(t, 23.4, 23.8), 1.6));
+    W.pulse(this.edr, t, 23.8, 8);
+    this.dt.style.opacity = eo(seg(t, 23.5, 24.0));
+    // The goal zones and the window, season by season.
+    const br = 0.75 + 0.25 * Math.sin(t * 2.2);
+    this.lo.style.opacity = (W.cl(eob(seg(t, 13.6, 14.1), 1.5)) * (1 - seg(t, 18.6, 19.1)) * br).toFixed(3);
+    this.hi.style.opacity = (W.cl(eob(seg(t, 24.6, 25.1), 1.5)) * br).toFixed(3);
+    W.light(this.jsun, this.jsh, J.ey, eo(seg(t, 14.4, 15.1)) * (1 - seg(t, 18.6, 19.1)));
+    this.ns.style.opacity = eo(seg(t, 15.0, 15.5)) * (1 - seg(t, 18.6, 19.1));
+    W.light(this.dsun, this.dsh, D.ey, eo(seg(t, 25.2, 25.9)) * (0.85 + 0.15 * Math.sin(t * 2)));
+    this.as.style.opacity = eo(seg(t, 25.8, 26.3));
+    W.head(this.head, t);
+    W.steps(this.steps, t, [-0.6, 6.5, 13.5, 19, 24.4]);
+  },
+});
+})(makeKit("design"));
+(function (kit) {
+const { seg, eo, eob, lerp } = kit;
+kit.scene('march', {
+  init(kit) {
+    const R = 55, M = W.hit(2, 47);
+    Object.assign(this, { R, M });
+    const a = 47 * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a);
+    const over = W.done([{ L: 1, col: '--pencil', degs: [71, 24], o: 0.3 }, { L: 3, col: '--main', degs: [71, 24], o: 0.3 }, { L: 2, col: '--green', degs: [71, 24] }]) +
+      '<g class="march-pro" style="opacity:0">' + W.prot('march-prot', R) +
+      '<path class="march-arc" style="fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round"/>' +
+      '<line class="march-ray" x1="0" y1="0" style="stroke:var(--main);stroke-width:2.5;stroke-dasharray:5 4"/></g>' +
+      '<line class="march-mark" x1="' + (710 + R * 1.06 * ux).toFixed(1) + '" y1="' + (340 + R * 1.06 * uy).toFixed(1) + '" x2="' + (710 + R * 1.28 * ux).toFixed(1) + '" y2="' + (340 + R * 1.28 * uy).toFixed(1) + '" style="stroke:var(--second);stroke-width:4;stroke-linecap:round;opacity:0"/>' +
+      '<line class="march-line" style="stroke:var(--green);stroke-width:4.5;stroke-linecap:round;stroke-dasharray:12 7;opacity:0"/>' +
+      '<circle class="march-end" cx="850" cy="' + M.ey.toFixed(1) + '" r="6.5" style="fill:var(--green);opacity:0"/>' + W.ring('march-endr', 850, M.ey.toFixed(1), '--green') +
+      W.lightSvg('march') + W.pencil('march-pen', 'green', '--green');
+    const html = W.lab('47°', 0, 0, 'c tag tag-sun march-deg', 'opacity:0') + W.lab('March 47°', 676, 430, 'c tag tag-green march-tag', 'opacity:0') +
+      W.lab('In shade', 878, 446, 'l tag march-sh', 'opacity:0') + W.lab('In sun', 878, 610, 'l tag tag-sun march-su', 'opacity:0');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('march', { over, html }) +
+      W.panel('Question 5', 'green', 'Add the March 20 line', [
+        'On March 20, the noon Sun is about 47°. Put the protractor on the tip of the 2 ft design and measure 47° down.',
+        'Draw the line to the wall. The part of the window below this line gets sunlight, and the part above it is in shade.']) + '</div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    Object.assign(this, { dg: q('.march-dg'), pro: q('.march-pro'), arc: q('.march-arc'), ray: q('.march-ray'), mark: q('.march-mark'), line: q('.march-line'),
+      end: q('.march-end'), endr: q('.march-endr'), sun: q('.march-sun'), shade: q('.march-shade'), pen: q('.march-pen'), deg: q('.march-deg'),
+      tag: q('.march-tag'), sh: q('.march-sh'), su: q('.march-su'), head: q('.pn-w') });
+    this.steps = [...kit.stage.querySelectorAll('.pn-s')];
+  },
+  render(t) {
+    const { R, M } = this;
+    W.cam(this.dg, t, [{ x: 790, y: 560, z: 1.35 }, { t: 0.2, d: 1.5, x: 760, y: 400, z: 2.2 }, { t: 7.0, d: 1.5, x: 790, y: 540, z: 1.45 }]);
+    const m = eob(seg(t, 1.0, 2.4), 1.5), out = seg(t, 6.8, 7.3);
+    this.pro.setAttribute('transform', 'translate(' + lerp(620, 710, m).toFixed(1) + ' ' + lerp(465, 340, m).toFixed(1) + ') rotate(' + lerp(-20, 0, m).toFixed(2) + ')');
+    this.pro.style.opacity = (eo(seg(t, 1.0, 1.5)) * (1 - out)).toFixed(3);
+    const sw = 47 * W.ease(seg(t, 3.0, 4.8)), ra = sw * Math.PI / 180;
+    this.arc.setAttribute('d', sw > 0.3 ? W.arc(34, sw) : 'M0 0');
+    this.ray.setAttribute('x2', (R * Math.cos(ra)).toFixed(2)); this.ray.setAttribute('y2', (R * Math.sin(ra)).toFixed(2));
+    this.ray.style.opacity = sw > 0.3 ? 1 : 0;
+    this.deg.style.left = (710 + 50 * Math.cos(ra / 2) + 10).toFixed(1) + 'px';
+    this.deg.style.top = (340 + 50 * Math.sin(ra / 2) + 3).toFixed(1) + 'px';
+    this.deg.style.opacity = (eo(seg(t, 4.5, 4.9)) * (1 - out)).toFixed(3);
+    this.mark.style.opacity = W.cl(eob(seg(t, 5.0, 5.4), 1.6)) * (1 - seg(t, 9.0, 9.5));
+    const d = W.ease(seg(t, 7.4, 8.8));
+    W.draw(this.line, 710, 340, M.ex, M.ey, d);
+    W.hold(this.pen, lerp(710, M.ex, d), lerp(340, M.ey, d), seg(t, 7.0, 7.4) * (1 - seg(t, 9.0, 9.4)), t);
+    this.end.style.opacity = W.cl(eob(seg(t, 8.8, 9.2), 1.6));
+    W.pulse(this.endr, t, 9.2, 8);
+    this.tag.style.opacity = eo(seg(t, 8.9, 9.4));
+    W.light(this.sun, this.shade, M.ey, eo(seg(t, 9.8, 10.6)) * (0.85 + 0.15 * Math.sin(t * 2)));
+    this.sh.style.opacity = eo(seg(t, 10.5, 11.0));
+    this.su.style.opacity = eo(seg(t, 10.8, 11.3));
+    W.head(this.head, t);
+    W.steps(this.steps, t, [-0.6, 7]);
+  },
+});
+})(makeKit("march"));
+(function (kit) {
+const { seg, eo } = kit;
+Object.assign(W, {
+  // Every finished line: 1 ft (pencil), 3 ft (color 1), the 2 ft design (color 2) and its dashed March line.
+  allLines() {
+    const m = W.hit(2, 47);
+    return W.done([{ L: 1, col: '--pencil', degs: [71, 24] }, { L: 3, col: '--main', degs: [71, 24] }, { L: 2, col: '--green', degs: [71, 24] }]) +
+      '<path d="M710 340 L850 ' + m.ey.toFixed(1) + '" style="stroke:var(--green);stroke-width:4.5;stroke-linecap:round;stroke-dasharray:12 7"/><circle cx="850" cy="' + m.ey.toFixed(1) + '" r="6" style="fill:var(--green)"/>';
+  },
+});
+kit.scene('recap', {
+  init(kit) {
+    const over = W.allLines();
+    const html = '';
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('recap', { over, html }) +
+      '<div class="pn"><div class="words pn-w"><div class="pn-eye"><span class="pn-chip pn-sun"></span>Recap</div>' +
+      '<h2 class="line pn-h">The same 4 steps for every line</h2><div class="pn-list">' +
+      '<p class="pn-li recap-li"><span class="pn-n">1</span><span>Draw the overhang from the dot (2 squares = 1 ft).</span></p>' +
+      '<p class="pn-li recap-li"><span class="pn-n">2</span><span>Put the protractor center on the tip, flat edge level.</span></p>' +
+      '<p class="pn-li recap-li"><span class="pn-n">3</span><span>Measure the angle down from level and draw the line to the wall.</span></p>' +
+      '<p class="pn-li recap-li"><span class="pn-n">4</span><span>Below the line is sun. Above the line is shade.</span></p>' +
+      '</div></div></div></div>'));
+    const q = (s) => kit.stage.querySelector(s);
+    this.dg = q('.recap-dg');
+    this.head = q('.pn-w');
+    this.items = [...kit.stage.querySelectorAll('.recap-li')];
+  },
+  render(t) {
+    W.cam(this.dg, t, [{ x: 640, y: 560, z: 1.0 }, { t: 0.2, d: 2.5, x: 660, y: 540, z: 1.04 }], 0.002);
+    W.head(this.head, t);
+    this.items.forEach((el, i) => {
+      const p = W.ease(seg(t, 0.5 + 0.9 * i, 1.0 + 0.9 * i));
+      el.style.opacity = p.toFixed(3);
+      el.style.transform = 'translateX(' + ((1 - p) * 28).toFixed(1) + 'px)';
+    });
+  },
+});
+})(makeKit("recap"));
+(function (kit) {
+const { seg, eo } = kit;
+kit.scene('final', {
+  init(kit) {
+    kit.css('.final-li { align-items:center } .final-sw { flex:none; width:56px; height:10px; border-radius:5px } .final-dash { background:repeating-linear-gradient(90deg, var(--green) 0 14px, transparent 14px 22px) } .final-note { font-size:30px; line-height:1.4; margin:0; color:var(--second) } .final-pause { font-size:30px; font-weight:700; color:var(--main); margin:0 }');
+    kit.stage.append(kit.h('<div class="ground">' + W.diagram('final', { over: W.allLines() }) +
+      '<div class="pn"><div class="words pn-w" style="top:90px"><div class="pn-eye"><span class="pn-chip pn-sun"></span>Your final model</div>' +
+      '<h2 class="line pn-h">Use this picture to fill in your sheet</h2><div class="pn-list" style="gap:16px">' +
+      '<p class="pn-li final-li final-it"><span class="final-sw pn-pencil"></span><span>1 ft overhang (pencil)</span></p>' +
+      '<p class="pn-li final-li final-it"><span class="final-sw pn-blue"></span><span>3 ft overhang (colored pencil 1)</span></p>' +
+      '<p class="pn-li final-li final-it"><span class="final-sw pn-green"></span><span>2 ft design (colored pencil 2)</span></p>' +
+      '<p class="pn-li final-li final-it"><span class="final-sw final-dash"></span><span>March line for the design</span></p></div>' +
+      '<p class="final-note final-it">For each overhang, the steep line is June (71°) and the flat line is December (24°).</p>' +
+      '<p class="final-note final-it">Read the height where each line hits the wall, using the scale on the left.</p>' +
+      '<p class="final-pause final-it">Pause here while you work.</p></div></div></div>'));
+    this.dg = kit.stage.querySelector('.final-dg');
+    this.head = kit.stage.querySelector('.pn-w');
+    this.items = [...kit.stage.querySelectorAll('.final-it')];
+  },
+  render(t) {
+    W.cam(this.dg, t, [{ x: 640, y: 560, z: 0.99 }, { t: 0, d: 1.2, x: 620, y: 540, z: 1.0 }], 0.0006);
+    W.head(this.head, t);
+    this.items.forEach((el, i) => {
+      const p = W.ease(seg(t, 0.4 + 0.5 * i, 0.9 + 0.5 * i));
+      el.style.opacity = p.toFixed(3);
+      el.style.transform = 'translateY(' + ((1 - p) * 16).toFixed(1) + 'px)';
+    });
+  },
+});
+})(makeKit("final"));
+
+</script>
+<script>
+(function () {
+  const STEPS = [["title", 0, 4.2], ["tour", 0, 3.5], ["tour", 5, 8.2], ["tour", 10, 13.5], ["tour", 15, 19], ["one-over", 0, 3.4], ["one-over", 4.6, 8.4], ["one-june", 0, 3.2], ["one-june", 6, 10.6], ["one-june", 12, 15.5], ["one-check", 0, 4.0], ["one-check", 6, 9.0], ["one-dec", 0, 7.2], ["one-dec", 7, 10.2], ["three", 0, 6.4], ["three", 6.5, 13.3], ["three", 13.5, 15.0], ["three", 19, 25.6], ["design", 0, 5.6], ["design", 6.5, 13.4], ["design", 13.5, 15.6], ["design", 19, 24.2], ["design", 24.4, 26.5], ["march", 0, 5.6], ["march", 7, 11.4], ["recap", 0, 4.0], ["final", 0, 4.2]];
+  const frame = document.getElementById('frame'), stage = document.getElementById('stage');
+  const els = { count: document.getElementById('count'), fill: document.getElementById('fill'), back: document.getElementById('back'), next: document.getElementById('next'), replay: document.getElementById('replay') };
+  function fit() { stage.style.transform = 'scale(' + (frame.clientWidth / 1920) + ')'; }
+  try { new ResizeObserver(fit).observe(frame); } catch (e) { window.addEventListener('resize', fit); }
+  fit();
+  let cur = 0, playing = false, t0 = 0, raf = 0, shown = null;
+  function show(sid, t) {
+    const S = SC[sid];
+    if (shown !== sid) { Object.values(SC).forEach((s) => { s.el.hidden = true; }); S.el.hidden = false; shown = sid; }
+    try { S.def.render.call(S.def, t, S.kit); } catch (e) { console.error(e); }
+  }
+  function ui() {
+    els.count.textContent = 'Step ' + (cur + 1) + ' of ' + STEPS.length;
+    els.fill.style.width = ((cur + 1) / STEPS.length * 100).toFixed(1) + '%';
+    els.back.disabled = cur === 0;
+    els.next.disabled = cur === STEPS.length - 1 && !playing;
+    els.next.textContent = cur === STEPS.length - 1 && !playing ? 'Done' : 'Next';
+  }
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function play(i) {
+    cur = i; const [sid, a, b] = STEPS[i];
+    cancelAnimationFrame(raf);
+    if (reduce) { playing = false; show(sid, b); ui(); return; }
+    playing = true; t0 = performance.now(); ui();
+    const tick = (now) => {
+      const t = a + (now - t0) / 1000;
+      if (t >= b) { show(sid, b); playing = false; ui(); return; }
+      show(sid, t); raf = requestAnimationFrame(tick);
+    };
+    show(sid, a); raf = requestAnimationFrame(tick);
+  }
+  function finish() { cancelAnimationFrame(raf); playing = false; const [sid, , b] = STEPS[cur]; show(sid, b); ui(); }
+  function hold(i) { cancelAnimationFrame(raf); playing = false; cur = i; const [sid, , b] = STEPS[i]; show(sid, b); ui(); }
+  function next() { if (playing) { finish(); return; } if (cur < STEPS.length - 1) play(cur + 1); }
+  function back() { if (cur > 0) hold(cur - 1); else hold(0); }
+  els.next.addEventListener('click', next);
+  els.back.addEventListener('click', back);
+  els.replay.addEventListener('click', () => play(cur));
+  document.addEventListener('keydown', (e) => {
+    if (e.target && /input|textarea|select/i.test(e.target.tagName)) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); back(); }
+  });
+  let SC = {};
+  (async () => {
+    SC = window.__SCENES;
+    for (const id of Object.keys(SC)) { const s = SC[id]; if (s.def.init) await s.def.init.call(s.def, s.kit); }
+    hold(0);
+  })();
+})();
+</script>
+
+</body>
+</html>
