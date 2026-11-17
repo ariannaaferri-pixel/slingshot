@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Make the Moon: Virtual Lab</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#1b2333; --muted:#5b6475; --line:#d6dbe6;
+    --blue:#1d4ed8; --blue-dark:#173ea8; --blue-soft:#e8eefc; --good:#0f7a43;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.4}
+  header{background:var(--blue);color:#fff;padding:14px 20px}
+  header h1{margin:0;font-size:22px}
+  header p{margin:4px 0 0;font-size:14px;opacity:.92}
+  main{max-width:1180px;margin:0 auto;padding:16px}
+  .tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .tab{border:2px solid var(--blue);background:#fff;color:var(--blue);padding:9px 16px;border-radius:8px;font-weight:bold;font-size:15px;cursor:pointer}
+  .tab.on{background:var(--blue);color:#fff}
+  .stage{display:flex;gap:14px;flex-wrap:wrap}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .card h2{font-size:15px;margin:0 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  #sideWrap{flex:0 0 230px}
+  #topWrap{flex:1 1 560px;min-width:300px}
+  canvas{display:block;width:100%;height:auto}
+  .panel{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px}
+  .steps{flex:1 1 520px}
+  .dataCard{flex:0 1 420px;min-width:290px}
+  .stepText{font-size:17px;margin:0 0 12px;min-height:48px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px}
+  button.act{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:11px 16px;font-size:16px;font-weight:bold;cursor:pointer}
+  button.act:hover{background:var(--blue-dark)}
+  button.act:disabled{background:#aab4c8;cursor:not-allowed}
+  button.done{background:var(--good)}
+  button.ghost{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+  table{border-collapse:collapse;width:100%;font-size:15px}
+  th,td{border:1px solid #9aa3b5;padding:7px 8px;text-align:center}
+  th{background:var(--blue-soft)}
+  td.filled{font-weight:bold;color:var(--blue-dark);animation:pop .5s}
+  @keyframes pop{from{background:#fff6c7}to{background:#fff}}
+  .note{font-size:14px;color:var(--muted);margin:10px 0 0}
+  .copy{background:#fff6d9;border:1px solid #e9cf72;border-radius:8px;padding:8px 10px;font-size:14px;margin-top:10px}
+  @media (max-width:700px){#sideWrap{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<header>
+  <h1>In Class Lab 4: Make the Moon (Virtual Lab)</h1>
+  <p>For students who missed the lab. Watch each step, then copy the numbers into your lab sheet. These are sample data from a model.</p>
+</header>
+<main>
+  <div class="tabs">
+    <button class="tab on" id="tab1">Part 1: Speed and Crater Size</button>
+    <button class="tab" id="tab2">Part 2: Old Surface, Young Surface</button>
+  </div>
+
+  <div class="stage">
+    <div class="card" id="sideWrap">
+      <h2>Side view</h2>
+      <canvas id="side" width="460" height="760"></canvas>
+    </div>
+    <div class="card" id="topWrap">
+      <h2>Top view of the tray</h2>
+      <canvas id="top" width="1320" height="920"></canvas>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="card steps">
+      <h2 id="stepHead">What to do</h2>
+      <p class="stepText" id="stepText"></p>
+      <div class="btns" id="btns"></div>
+      <p class="note" id="stepNote"></p>
+    </div>
+    <div class="card dataCard">
+      <h2 id="dataHead">Data Table 1</h2>
+      <div id="dataBox"></div>
+      <div class="copy">Copy these numbers into your lab sheet, then answer the Post Lab questions.</div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+"use strict";
+// ---------- setup ----------
+const side=document.getElementById('side'), sctx=side.getContext('2d');
+const top=document.getElementById('top'), tctx=top.getContext('2d');
+const TW=33, TH=23;                 // tray size in cm (a 13 x 9 inch pan)
+const PAD=40;                       // pixels around the tray
+const PX=(top.width-2*PAD)/TW;      // pixels per cm
+const surf=document.createElement('canvas'); surf.width=top.width; surf.height=top.height;
+const g=surf.getContext('2d');      // the tray surface (craters get baked in here)
+const cx=x=>PAD+x*PX, cy=y=>PAD+y*PX;
+
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+// Sample data (made up for this model; similar to what students measure in class)
+const P1=[{h:25,d:3.0,e:1.5,x:6.5,y:11.5,seed:11},
+          {h:50,d:3.6,e:2.4,x:16.5,y:11.5,seed:22},
+          {h:100,d:4.4,e:3.6,x:26.5,y:11.5,seed:33}];
+const P2A=[{x:4.5,y:5.5},{x:10.5,y:15.5},{x:13.5,y:7.5},{x:6.0,y:17.0},{x:12.0,y:12.0},
+           {x:21.5,y:6.0},{x:27.5,y:15.0},{x:22.5,y:17.5}];          // 5 left, 3 right
+const P2B=[{x:8.5,y:10.0},{x:24.5,y:11.0},{x:29.5,y:5.5}];          // 1 left, 2 right
+const D50=3.6, E50=2.4;
+
+// ---------- drawing the tray ----------
+function paintSurface(x0,x1,style){   // x in cm
+  const X0=cx(x0), X1=cx(x1);
+  if(style==='cocoa'){
+    g.fillStyle='#6f4a33'; g.fillRect(X0,cy(0),X1-X0,TH*PX);
+    const r=rng(5+Math.round(x0*7));
+    for(let i=0;i<(x1-x0)*TH*14;i++){
+      g.fillStyle=r()<.5?'rgba(255,240,220,.07)':'rgba(40,20,10,.10)';
+      g.fillRect(X0+r()*(X1-X0),cy(0)+r()*TH*PX,2+r()*3,2+r()*3);
+    }
+  }else{ // smoothed flour mixed with a little cocoa
+    g.fillStyle='#d9c7b0'; g.fillRect(X0,cy(0),X1-X0,TH*PX);
+    const r=rng(9+Math.round(x0*3));
+    for(let i=0;i<(x1-x0)*TH*14;i++){
+      g.fillStyle=r()<.5?'rgba(255,255,255,.18)':'rgba(110,75,50,.10)';
+      g.fillRect(X0+r()*(X1-X0),cy(0)+r()*TH*PX,2+r()*3,2+r()*3);
+    }
+  }
+}
+function drawTrayFrame(ctx){
+  ctx.save();
+  ctx.lineWidth=14; ctx.strokeStyle='#9aa1ab';
+  ctx.strokeRect(PAD-7,PAD-7,TW*PX+14,TH*PX+14);
+  ctx.lineWidth=2; ctx.strokeStyle='#6c737d';
+  ctx.strokeRect(PAD-14,PAD-14,TW*PX+28,TH*PX+28);
+  ctx.restore();
+}
+function drawCrater(ctx,x,y,dcm,ecm,seed,grow){
+  grow=grow===undefined?1:grow;
+  const r=dcm/2*PX*grow, X=cx(x), Y=cy(y), R=rng(seed);
+  const ej=(dcm/2+ecm)*PX*grow;
+  // ejecta: white flour thrown on top of the cocoa
+  ctx.save();
+  for(let i=0;i<14;i++){                       // rays
+    const a=R()*Math.PI*2, len=r+(ej-r)*(0.55+R()*0.45);
+    const w=(1.5+R()*2.5)*PX*0.12;
+    ctx.strokeStyle='rgba(250,247,240,'+(0.35+R()*0.3)+')';
+    ctx.lineWidth=w; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(X+Math.cos(a)*r*0.9,Y+Math.sin(a)*r*0.9);
+    ctx.lineTo(X+Math.cos(a)*len,Y+Math.sin(a)*len); ctx.stroke();
+  }
+  for(let i=0;i<260;i++){                      // speckles
+    const a=R()*Math.PI*2, d=r+Math.pow(R(),1.6)*(ej-r);
+    const s=1+R()*3.2;
+    ctx.fillStyle='rgba(252,250,244,'+(0.85-0.6*(d-r)/(ej-r+0.01))+')';
+    ctx.beginPath(); ctx.arc(X+Math.cos(a)*d,Y+Math.sin(a)*d,s,0,7); ctx.fill();
+  }
+  const halo=ctx.createRadialGradient(X,Y,r*0.9,X,Y,r*1.55);
+  halo.addColorStop(0,'rgba(250,247,240,.95)'); halo.addColorStop(1,'rgba(250,247,240,0)');
+  ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(X,Y,r*1.55,0,7); ctx.fill();
+  // bowl: light comes from the upper left
+  const bowl=ctx.createRadialGradient(X+r*0.28,Y+r*0.28,r*0.1,X,Y,r);
+  bowl.addColorStop(0,'#f3eee6'); bowl.addColorStop(0.55,'#d8d0c4'); bowl.addColorStop(1,'#a99e8f');
+  ctx.fillStyle=bowl; ctx.beginPath(); ctx.arc(X,Y,r,0,7); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.arc(X,Y,r,0,7); ctx.clip();
+  ctx.fillStyle='rgba(70,55,40,.28)';
+  ctx.beginPath(); ctx.arc(X+r*0.35,Y+r*0.35,r*1.05,0,7); ctx.arc(X,Y,r*1.2,0,7,true); ctx.fill();
+  ctx.restore();
+  ctx.lineWidth=Math.max(2,PX*0.18); ctx.strokeStyle='rgba(255,255,255,.95)';
+  ctx.beginPath(); ctx.arc(X,Y,r,Math.PI*0.6,Math.PI*1.9); ctx.stroke();
+  ctx.strokeStyle='rgba(80,65,50,.45)';
+  ctx.beginPath(); ctx.arc(X,Y,r,Math.PI*1.9,Math.PI*2.6); ctx.stroke();
+  ctx.restore();
+}
+
+// ---------- overlays (measuring lines, labels) ----------
+let overlay=[];   // list of functions drawn on top of the tray
+function dimLine(ctx,x1,y1,x2,y2,label,color,below){
+  ctx.save(); ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  for(const [x,y,s] of [[x1,y1,1],[x2,y2,-1]]){
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+14*s,y-9); ctx.lineTo(x+14*s,y+9); ctx.closePath(); ctx.fill();
+  }
+  ctx.font='bold 30px Arial'; ctx.textAlign='center';
+  const tx=(x1+x2)/2, ty=below?y1+44:y1-16;
+  const w=ctx.measureText(label).width+16;
+  ctx.fillStyle='rgba(255,255,255,.93)'; ctx.fillRect(tx-w/2,ty-30,w,40);
+  ctx.fillStyle=color; ctx.fillText(label,tx,ty);
+  ctx.restore();
+}
+function measureOverlay(c){
+  return function(ctx){
+    const X=cx(c.x), Y=cy(c.y), r=c.d/2*PX, e=c.e*PX;
+    dimLine(ctx,X-r,Y,X+r,Y,c.d.toFixed(1)+' cm','#1d4ed8',false);
+    dimLine(ctx,X+r,Y+r*0.15+40,X+r+e,Y+r*0.15+40,c.e.toFixed(1)+' cm','#b42318',true);
+    ctx.save(); ctx.setLineDash([8,8]); ctx.strokeStyle='#b42318'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(X+r,Y); ctx.lineTo(X+r,Y+r*0.15+52); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X+r+e,Y); ctx.lineTo(X+r+e,Y+r*0.15+52); ctx.stroke(); ctx.restore();
+  };
+}
+function halfLine(ctx){
+  ctx.save(); ctx.setLineDash([16,12]); ctx.strokeStyle='rgba(20,30,60,.75)'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(cx(TW/2),cy(0)); ctx.lineTo(cx(TW/2),cy(TH)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font='bold 30px Arial'; ctx.textAlign='center';
+  for(const [x,t] of [[TW/4,'LEFT HALF'],[3*TW/4,'RIGHT HALF']]){
+    const w=ctx.measureText(t).width+18;
+    ctx.fillStyle='rgba(255,255,255,.9)'; ctx.fillRect(cx(x)-w/2,cy(0)+8,w,40);
+    ctx.fillStyle='#1b2333'; ctx.fillText(t,cx(x),cy(0)+38);
+  }
+  ctx.restore();
+}
+function render(extra){
+  tctx.clearRect(0,0,top.width,top.height);
+  tctx.drawImage(surf,0,0);
+  drawTrayFrame(tctx);
+  for(const f of overlay) f(tctx);
+  if(extra) extra(tctx);
+}
+
+// ---------- side view ----------
+const S={stickX:120,base:690,top:90};   // y of flour surface and of 100 cm
+const hy=h=>S.base-(S.base-S.top)*h/100;
+function drawSide(ballH,splash,heightMark,ruler){
+  const c=sctx; c.clearRect(0,0,side.width,side.height);
+  // meter stick
+  c.fillStyle='#f2d58a'; c.fillRect(S.stickX-26,S.top-20,52,S.base-S.top+20);
+  c.strokeStyle='#9c7a2c'; c.lineWidth=2; c.strokeRect(S.stickX-26,S.top-20,52,S.base-S.top+20);
+  c.fillStyle='#4a3a12'; c.font='bold 22px Arial'; c.textAlign='right';
+  for(let h=0;h<=100;h+=5){
+    const y=hy(h); c.beginPath(); c.moveTo(S.stickX+26,y); c.lineTo(S.stickX+26-(h%25?10:22),y); c.stroke();
+    if(h%25===0) c.fillText(h+'',S.stickX-32,y+8);
+  }
+  c.save(); c.translate(36,(S.base+S.top)/2); c.rotate(-Math.PI/2); c.textAlign='center'; c.font='bold 22px Arial'; c.fillStyle='#5b6475';
+  c.fillText('Drop height (cm)',0,0); c.restore();
+  // tray side
+  c.fillStyle='#e8dccb'; c.fillRect(170,S.base,260,30);
+  c.fillStyle='#6f4a33'; c.fillRect(170,S.base,260,6);
+  c.strokeStyle='#8a9099'; c.lineWidth=8;
+  c.beginPath(); c.moveTo(166,S.base-24); c.lineTo(166,S.base+34); c.lineTo(434,S.base+34); c.lineTo(434,S.base-24); c.stroke();
+  if(heightMark!=null){
+    c.setLineDash([10,8]); c.strokeStyle='#1d4ed8'; c.lineWidth=3;
+    c.beginPath(); c.moveTo(S.stickX+26,hy(heightMark)); c.lineTo(400,hy(heightMark)); c.stroke(); c.setLineDash([]);
+    c.fillStyle='#1d4ed8'; c.font='bold 24px Arial'; c.textAlign='left'; c.fillText(heightMark+' cm',330,hy(heightMark)-12);
+  }
+  if(ballH!=null){
+    const y=hy(ballH)-14;
+    const grd=c.createRadialGradient(294,y-5,3,300,y,16);
+    grd.addColorStop(0,'#cfe8ff'); grd.addColorStop(.5,'#3c7fd6'); grd.addColorStop(1,'#163d7a');
+    c.fillStyle=grd; c.beginPath(); c.arc(300,y,14,0,7); c.fill();
+  }
+  if(splash){
+    for(const p of splash){ c.fillStyle='rgba(250,247,240,'+p.a+')'; c.beginPath(); c.arc(p.x,p.y,p.s,0,7); c.fill(); }
+  }
+  if(ruler!=null){ // smoothing ruler seen from the side
+    c.fillStyle='#c8ccd2'; c.fillRect(ruler-6,S.base-40,12,44);
+  }
+}
+
+// ---------- animation helpers ----------
+let busy=false;
+function anim(ms,step){return new Promise(res=>{const t0=performance.now();function f(t){const k=Math.min(1,(t-t0)/ms);step(k);if(k<1)requestAnimationFrame(f);else res();}requestAnimationFrame(f);});}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+
+async function dropMarble(h,c,showMeasure){
+  // fall (time grows with the square root of height)
+  const T=420*Math.sqrt(h/25);
+  await anim(T,k=>{drawSide(h*(1-k*k),null,h);});
+  // splash in side view
+  const R=rng(c.seed||7), parts=[];
+  for(let i=0;i<26;i++) parts.push({vx:(R()-.5)*(4+h/12),vy:-(2+R()*(3+h/14)),x:300,y:S.base-2,s:2+R()*4,a:.95});
+  const grow=anim(520,k=>{
+    tctx.clearRect(0,0,top.width,top.height); tctx.drawImage(surf,0,0); drawTrayFrame(tctx);
+    for(const f of overlay) f(tctx);
+    drawCrater(tctx,c.x,c.y,c.d,c.e,c.seed||7,0.25+0.75*Math.sqrt(k));
+  });
+  const fly=anim(700,k=>{
+    for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=0.35;p.a=0.95*(1-k);}
+    drawSide(null,parts.filter(p=>p.y<S.base+4),h);
+  });
+  await Promise.all([grow,fly]);
+  drawCrater(g,c.x,c.y,c.d,c.e,c.seed||7,1);
+  if(showMeasure) overlay.push(measureOverlay(c));
+  render(); drawSide(null,null,h);
+}
+async function smooth(x0,x1){
+  const startX=cx(x0), endX=cx(x1);
+  const before=document.createElement('canvas'); before.width=surf.width; before.height=surf.height;
+  before.getContext('2d').drawImage(surf,0,0);
+  await anim(1300,k=>{
+    const X=startX+(endX-startX)*k;
+    tctx.clearRect(0,0,top.width,top.height);
+    tctx.drawImage(before,0,0);
+    // smoothed part
+    tctx.save(); tctx.beginPath(); tctx.rect(startX,cy(0),X-startX,TH*PX); tctx.clip();
+    tctx.fillStyle='#d9c7b0'; tctx.fillRect(startX,cy(0),X-startX,TH*PX); tctx.restore();
+    drawTrayFrame(tctx);
+    for(const f of overlay) f(tctx);
+    // the ruler
+    tctx.fillStyle='rgba(205,210,218,.95)'; tctx.fillRect(X-10,cy(0)-24,20,TH*PX+48);
+    tctx.strokeStyle='#7a828e'; tctx.lineWidth=3; tctx.strokeRect(X-10,cy(0)-24,20,TH*PX+48);
+    drawSide(null,null,null,170+260*k);
+  });
+  paintSurface(x0,x1,'flour');
+  render(); drawSide(null,null,null);
+}
+
+// ---------- data tables ----------
+const box=document.getElementById('dataBox');
+let t1={}, t2={left:null,right:null};
+function table1(){
+  let h='<table><tr><th>Drop height (cm)</th><th>Crater diameter (cm)</th><th>Ejecta spread from crater’s edge (cm)</th></tr>';
+  for(const c of P1){const f=t1[c.h];
+    h+='<tr><td>'+c.h+'</td><td class="'+(f?'filled':'')+'">'+(f?c.d.toFixed(1):'')+'</td><td class="'+(f?'filled':'')+'">'+(f?c.e.toFixed(1):'')+'</td></tr>';}
+  box.innerHTML=h+'</table>';
+  document.getElementById('dataHead').textContent='Data Table 1';
+}
+function table2(){
+  const f=t2.left!=null;
+  box.innerHTML='<table><tr><th>Half of tray</th><th>Number of craters</th></tr>'+
+    '<tr><td>Left half (not smoothed)</td><td class="'+(f?'filled':'')+'">'+(f?t2.left:'')+'</td></tr>'+
+    '<tr><td>Right half (smoothed)</td><td class="'+(f?'filled':'')+'">'+(f?t2.right:'')+'</td></tr></table>';
+  document.getElementById('dataHead').textContent='Data Table 2';
+}
+
+// ---------- step controls ----------
+const stepText=document.getElementById('stepText'), btns=document.getElementById('btns'), note=document.getElementById('stepNote');
+function setStep(text,buttons,n){
+  stepText.innerHTML=text; note.innerHTML=n||''; btns.innerHTML='';
+  for(const b of buttons){
+    const el=document.createElement('button'); el.className='act'+(b.cls?' '+b.cls:''); el.textContent=b.label;
+    if(b.disabled) el.disabled=true;
+    el.onclick=async()=>{ if(busy) return; busy=true; [...btns.children].forEach(x=>x.disabled=true); await b.go(); busy=false; };
+    btns.appendChild(el);
+  }
+}
+
+// ----- Part 1 -----
+let p1done=new Set();
+function part1Buttons(){
+  return P1.map(c=>({label:(p1done.has(c.h)?'✓ ':'')+'Drop from '+c.h+' cm',cls:p1done.has(c.h)?'done':'',disabled:p1done.has(c.h),
+    go:async()=>{ await dropMarble(c.h,c,true); p1done.add(c.h); t1[c.h]=true; table1(); showPart1(); }}))
+    .concat([{label:'Start over',cls:'ghost',go:async()=>{startPart1();}}]);
+}
+function showPart1(){
+  const left=3-p1done.size;
+  const txt=left? 'Click a button to drop the marble. Each drop lands on a fresh, smooth spot. The <b style="color:#1d4ed8">blue line</b> measures the crater from rim to rim. The <b style="color:#b42318">red line</b> measures how far the white flour (ejecta) spread from the crater’s edge.'
+               : '<b>All three drops are done.</b> Look at the three craters. What happens to the crater and the ejecta as the drop height goes up? Next, click <b>Part 2</b> at the top.';
+  setStep(txt,part1Buttons(),'A marble dropped from higher up is moving faster when it hits the flour.');
+}
+function startPart1(){
+  overlay=[]; p1done=new Set(); t1={};
+  paintSurface(0,TW,'cocoa'); render(); drawSide(null,null,null); table1(); showPart1();
+}
+
+// ----- Part 2 -----
+let p2=0;
+function showPart2(){
+  const steps=[
+   {t:'<b>Step 1: Billions of years of impacts.</b> First the whole tray is smoothed so the Part 1 craters are gone. Then the marble is dropped 8 times from 50 cm, all over the tray.',
+    b:'Smooth the tray and drop 8 times',go:async()=>{
+      overlay=[halfLine]; await smooth(0,TW);
+      for(let i=0;i<P2A.length;i++){ await dropMarble(50,{x:P2A[i].x,y:P2A[i].y,d:D50,e:E50,seed:100+i},false); await wait(120); }
+    }},
+   {t:'<b>Step 2: A lava flood.</b> Only the <b>right half</b> of the tray is smoothed flat. This is like lava covering part of the Moon and erasing its craters.',
+    b:'Smooth the right half',go:async()=>{ await smooth(TW/2,TW); }},
+   {t:'<b>Step 3: More time passes.</b> The marble is dropped 3 more times from 50 cm, spread out over both halves.',
+    b:'Drop 3 more times',go:async()=>{
+      for(let i=0;i<P2B.length;i++){ await dropMarble(50,{x:P2B[i].x,y:P2B[i].y,d:D50,e:E50,seed:200+i},false); await wait(120); }
+    }},
+   {t:'<b>Step 4: Count the craters.</b> Each crater is numbered so you can count every one on each half.',
+    b:'Number the craters',go:async()=>{
+      const all=[...P2A.map((c,i)=>({...c,id:i})),...P2B.map((c,i)=>({...c,id:8+i}))];
+      const leftList=all.filter(c=>c.x<TW/2);
+      const rightList=P2B.filter(c=>c.x>=TW/2);
+      let L=0,Rr=0;
+      overlay.push(function(ctx){
+        ctx.save(); ctx.font='bold 34px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        let i=0;
+        for(const c of leftList){ i++; ctx.fillStyle='#1d4ed8'; ctx.beginPath(); ctx.arc(cx(c.x),cy(c.y)-D50/2*PX-26,22,0,7); ctx.fill(); ctx.fillStyle='#fff'; ctx.fillText(i,cx(c.x),cy(c.y)-D50/2*PX-25); }
+        let j=0;
+        for(const c of rightList){ j++; ctx.fillStyle='#b42318'; ctx.beginPath(); ctx.arc(cx(c.x),cy(c.y)-D50/2*PX-26,22,0,7); ctx.fill(); ctx.fillStyle='#fff'; ctx.fillText(j,cx(c.x),cy(c.y)-D50/2*PX-25); }
+        ctx.restore();
+      });
+      render();
+      t2={left:leftList.length,right:rightList.length}; table2();
+    }}
+  ];
+  if(p2<steps.length){
+    const s=steps[p2];
+    setStep(s.t,[{label:s.b,go:async()=>{ await s.go(); p2++; showPart2(); }},{label:'Start over',cls:'ghost',go:async()=>{startPart2();}}],
+      p2===0?'The dashed line splits the tray into a left half and a right half.':'');
+  }else{
+    setStep('<b>Done.</b> The left half has <b>'+t2.left+'</b> craters and the right half has <b>'+t2.right+'</b>. Which half is the older surface? Which half is like the dark maria on the Moon?',
+      [{label:'Start over',cls:'ghost',go:async()=>{startPart2();}}],'Now go to Part 3 in your lab sheet and read the three evidence files.');
+  }
+}
+function startPart2(){
+  p2=0; overlay=[halfLine]; t2={left:null,right:null};
+  // tray still shows the three Part 1 craters
+  paintSurface(0,TW,'cocoa'); for(const c of P1) drawCrater(g,c.x,c.y,c.d,c.e,c.seed,1);
+  render(); drawSide(null,null,null); table2(); showPart2();
+}
+
+// ---------- tabs ----------
+const tab1=document.getElementById('tab1'), tab2=document.getElementById('tab2');
+tab1.onclick=()=>{ if(busy) return; tab1.classList.add('on'); tab2.classList.remove('on'); startPart1(); };
+tab2.onclick=()=>{ if(busy) return; tab2.classList.add('on'); tab1.classList.remove('on'); startPart2(); };
+startPart1();
+})();
+</script>
+</body>
+</html>
