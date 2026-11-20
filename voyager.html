@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voyager 1 Light-Day</title>
+<style>
+html,body{margin:0;height:100%;background:#070c18;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#E8EEF5}
+#c{position:absolute;left:0;top:0;width:100%;height:calc(100% - 64px);display:block}
+#bar{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;align-items:center;gap:10px;padding:0 14px;background:#0B1424;border-top:1px solid #1d3550;box-sizing:border-box}
+#bar button{background:#3FA7D6;color:#0B1424;border:0;border-radius:6px;font:bold 15px Arial,sans-serif;padding:9px 14px;cursor:pointer;min-width:76px}
+#bar button.alt{background:transparent;color:#E8EEF5;border:1px solid #3FA7D6}
+#chap{display:flex;gap:6px}
+#chap button{min-width:0;padding:8px 10px;font-size:13px;background:transparent;color:#c9d6e3;border:1px solid #2b4a6b}
+#chap button.on{background:#F2A541;color:#0B1424;border-color:#F2A541}
+#scrub{flex:1;min-width:60px;accent-color:#F2A541}
+#time{font:14px monospace;min-width:58px;text-align:right}
+@media (max-width:900px){#chap button{font-size:11px;padding:6px 6px}#fs{display:none}}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="bar"><button id="play">Pause</button><button id="again" class="alt">Replay</button>
+<div id="chap"></div>
+<input id="scrub" type="range" min="0" max="116" step="0.01" value="0" aria-label="Timeline"><span id="time">0.0 s</span><button id="fs" class="alt">Full screen</button></div>
+<script>
+const D2R=Math.PI/180, GLON0=-98*D2R, GLAT0=22*D2R;
+const GLOBE=(()=>{const N=520,g=document.createElement('canvas');g.width=g.height=N;const c=g.getContext('2d'),R=N/2-1,C=N/2;
+ const lon0=GLON0,lat0=GLAT0;
+ function pr(lon,lat){lon*=D2R;lat*=D2R;const dl=lon-lon0;let x=Math.cos(lat)*Math.sin(dl),y=Math.cos(lat0)*Math.sin(lat)-Math.sin(lat0)*Math.cos(lat)*Math.cos(dl);
+  if(Math.sin(lat0)*Math.sin(lat)+Math.cos(lat0)*Math.cos(lat)*Math.cos(dl)<0){const m=Math.hypot(x,y)||1;x/=m;y/=m;}return[C+x*R,C-y*R];}
+ function vis(lon,lat){lon*=D2R;lat*=D2R;return Math.sin(lat0)*Math.sin(lat)+Math.cos(lat0)*Math.cos(lat)*Math.cos(lon-lon0);}
+ function poly(pts,fill){c.beginPath();for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length],n=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/1.5));
+   for(let k=0;k<n;k++){const q=pr(a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n);i||k?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]);}}c.closePath();c.fillStyle=fill;c.fill();}
+ const LAND={
+  nam:[[-168,66],[-163,70],[-156,71.3],[-141,69.6],[-128,70],[-115,68.5],[-100,68],[-94,71.5],[-86,69.5],[-82,66],[-87,64],[-93,61],[-94,58.8],[-90,57],[-82,55],[-79,52],[-79,55.5],[-77,59],[-78,62.5],[-72,61.5],[-69,59],[-65,60.3],[-61.5,56],[-56,52],[-59.5,47.8],[-64,46.5],[-66,45],[-70,43.5],[-70,41.7],[-74,40.5],[-75.5,38],[-76,35.5],[-78,34],[-81,31.5],[-80,27],[-80.4,25.2],[-81.8,26],[-82.8,28.5],[-84.3,30],[-86.5,30.4],[-89.5,30.2],[-90.5,29.1],[-94,29.6],[-97.2,27.5],[-97.7,24],[-97.3,21],[-95.5,18.8],[-92,18.6],[-90.5,20.8],[-87,21.5],[-87.6,18.5],[-88.3,15.8],[-84,15.8],[-83.3,12],[-83.6,10.5],[-81.5,9],[-79.5,9.5],[-77.4,8.6],[-78.2,7.2],[-80.5,7.3],[-83,8.2],[-85.7,10.5],[-87.5,13],[-91.5,14],[-94.5,16],[-96.5,15.7],[-101,17.3],[-105.5,20.3],[-105.5,23],[-109,26.5],[-112.5,30],[-114.7,31.7],[-113,29],[-110,24],[-109.5,23],[-112,25],[-114.3,27.8],[-115.7,29.7],[-117.1,32.6],[-118.5,34],[-120.6,34.6],[-122.5,37.5],[-124.2,40.5],[-124,46.2],[-124.7,48.4],[-123,49],[-127.5,50.8],[-130.5,54.3],[-134,57.5],[-137.5,59],[-141,60],[-146,60.8],[-150,61.2],[-151.8,59.2],[-154,57.3],[-158,56.5],[-162.5,55],[-157.5,58.5],[-162,60],[-165,61.5],[-164.5,63.2],[-161,64.5],[-166,65.5]],
+  sam:[[-77.4,8.6],[-75.5,10.5],[-72,12],[-68.5,11.2],[-64,10.6],[-61,10.4],[-60,8.5],[-57,6],[-52.5,5],[-51,3.5],[-50,0.5],[-48,-1],[-44.5,-2.5],[-41,-2.8],[-38,-4],[-35.2,-5.5],[-35,-8.8],[-37,-11.5],[-39,-15],[-39.2,-18],[-40.8,-22],[-43,-23],[-48.5,-26],[-48.8,-28.5],[-50.5,-30.8],[-53,-33.8],[-56,-34.8],[-57.5,-36.2],[-57.6,-38.2],[-62,-39],[-62.5,-41],[-65,-42.5],[-64.5,-45],[-67.5,-46.5],[-66,-48],[-69,-50.5],[-68.3,-52.3],[-70,-53],[-67.5,-54.7],[-71,-55],[-74.5,-52.5],[-75.5,-48],[-74,-44],[-73.6,-40],[-73.2,-37],[-71.6,-33],[-71.4,-29],[-70.4,-24],[-70.2,-18.5],[-72.5,-17],[-76.2,-14],[-78.2,-10.5],[-79.6,-7.8],[-81.2,-6],[-81,-4.3],[-80,-2.5],[-80.8,-1],[-80,0.8],[-78.8,1.8],[-77.5,4],[-77.4,6.8],[-78.2,7.2]],
+  grl:[[-73,78.3],[-66,80.5],[-58,82],[-42,83.5],[-24,82.5],[-18,79.5],[-19.5,74],[-22,70.5],[-26,68.5],[-33,67.5],[-38,65.6],[-42,62],[-44,60],[-48,61],[-51,64],[-53.5,67],[-54,70],[-56.5,73.5],[-60,76],[-68,77]],
+  cub:[[-85,21.9],[-82.6,23.1],[-80,23],[-76,21.2],[-74.2,20.2],[-77.6,19.9],[-78.5,21.6],[-81.5,22.2],[-84.5,21.7]],
+  his:[[-74.4,19.8],[-71.8,19.9],[-69.3,19.2],[-68.4,18.5],[-70,18.2],[-71.5,17.6],[-74.4,18.4]],
+  jam:[[-78.3,18.4],[-76.3,18.2],[-76.8,17.8],[-78.2,18.1]],
+  pr:[[-67.2,18.5],[-65.6,18.4],[-65.7,18],[-67.2,18]],
+  afr:[[-17,21],[-16.5,15],[-17.5,14.7],[-16.7,12.4],[-15,11],[-13,9],[-11,7],[-7.5,4.4],[-4,5.2],[1,6],[4.5,6.3],[6,4.3],[8.7,4.5],[9.6,2.5],[9.3,-1],[11.8,-4.5],[12.3,-6.5],[13.4,-10.5],[12,-16],[11.8,-18],[14.4,-23],[15.2,-27],[17.2,-30],[18.4,-34],[20,-34.8],[25.5,-34],[30,-31.2],[32.8,-26],[35.4,-24],[34.8,-20],[40.5,-15],[40,-10.5],[39.3,-6],[41,-1.8],[44,1.8],[47.5,5],[51.2,11],[43.5,11.5],[42.5,15],[39,21],[37,25],[34,28],[32.4,31.2],[29,30.9],[25,31.8],[20,32],[19.5,30.4],[15.5,31.5],[11,33.2],[10.2,37],[3,36.8],[-2,35.1],[-5.9,35.8],[-6.8,34],[-9.8,30.5],[-9.7,29],[-13,27.6],[-14.5,26],[-16.2,23.8]],
+  eur:[[-9,37],[-8.7,42],[-9.3,43],[-8,43.7],[-2,43.4],[-1.4,46],[-2.3,47.2],[-4.6,48.4],[-1.6,48.7],[1.5,50.2],[3.5,51.3],[5,53.3],[8.6,53.8],[8.2,56.8],[10.6,57.7],[10.5,56],[12.2,54.5],[14.5,54],[19,54.4],[21.2,56.8],[24,57.3],[24,59.3],[29.8,60],[22.9,59.9],[21.3,61.5],[25.2,65],[21.5,64],[17.3,61.5],[19,59.8],[16.5,57],[14.2,55.4],[12.5,56.2],[11.2,58.7],[10.3,59.2],[8,58.1],[5.5,58.8],[5,61.8],[8,63.5],[13,66],[15,68.5],[19,70],[25,71],[31,70],[40,67],[40,40],[29,41],[26,40],[23.5,38],[22.7,36.5],[21,38.5],[19.5,41.5],[16,43.5],[12.5,45],[13.6,45.7],[15.5,41],[18.5,40],[15.6,38],[15.8,40.1],[12.2,41.8],[10.5,43],[8.7,44.4],[7,43.6],[3.2,43.2],[3.2,41.9],[0.9,41],[-0.3,39.4],[0.2,38.7],[-0.7,37.6],[-2.1,36.7],[-4.4,36.7],[-5.6,36]],
+  gbr:[[-5.7,50.1],[-3,50.6],[1.4,51.2],[1.7,52.7],[0.1,53.5],[-1.3,54.9],[-2,55.9],[-1.9,57.6],[-3.2,58.6],[-5,58.6],[-6.2,56.8],[-5.6,55.4],[-4.9,54.8],[-3.3,54.6],[-3.2,53.4],[-4.6,53.3],[-4.3,52.4],[-5.2,51.7],[-3.3,51.4]],
+  irl:[[-6,52.2],[-6.2,53.9],[-5.7,54.6],[-7.3,55.3],[-8.5,54.7],[-10,53.4],[-9.8,52.1],[-10.3,51.6],[-8.4,51.6]],
+  isl:[[-24,64.8],[-21.7,66.2],[-18,66.2],[-14.5,66.3],[-13.6,65.1],[-15,64.3],[-18.7,63.4],[-22.7,63.8]],
+  rus:[[40,67],[44,68.5],[53,68.6],[60,69.8],[68,69.5],[73,72.5],[80,73.5],[100,76.8],[112,73.5],[130,71],[150,71.5],[170,70],[180,67],[180,45],[140,40],[120,30],[100,20],[60,20],[50,30],[40,40]],
+  caarc:[[-125,72],[-115,73.5],[-105,73],[-95,74.3],[-90,76.5],[-80,76],[-75,72],[-80,70],[-90,72],[-95,69.5],[-105,69],[-117,70.5]],
+  ell:[[-95,77],[-85,77.5],[-75,79],[-62,82],[-75,83],[-90,81.5],[-100,79]],
+  baf:[[-90,71],[-81,73.7],[-72,71.5],[-66,68.5],[-62,66.8],[-65,64],[-68,62.8],[-73,64.3],[-78,64.5],[-75,67.5],[-82,69.5]],
+  nfl:[[-59.3,47.6],[-55.5,46.8],[-52.7,47.5],[-53.6,49.5],[-56,51.6],[-57.8,50.7]]};
+ const DES={sw:[[-117,34.5],[-112,37.5],[-106,36],[-103.5,31],[-106,27],[-109,26.5],[-112.5,30],[-115,32]],
+  sah:[[-16.3,22],[-15,27],[-9.5,29.5],[-5,32],[5,33.5],[11,32.5],[20,31],[29,30],[33,28],[37,22],[38,17],[30,16],[22,15],[12,15],[3,15.5],[-5,16],[-12,16.5]],
+  pat:[[-69,-38],[-63,-39],[-65,-46],[-69,-50],[-71,-45]],
+  kal:[[14.5,-18],[21,-19],[24,-26],[19,-30],[15.5,-27]]};
+ c.save();c.beginPath();c.arc(C,C,R,0,7);c.clip();
+ // ocean
+ let gr=c.createRadialGradient(C-R*0.35,C-R*0.4,R*0.05,C,C,R*1.05);gr.addColorStop(0,'#3d8fd8');gr.addColorStop(0.55,'#1b5fae');gr.addColorStop(1,'#0c2f66');
+ c.fillStyle=gr;c.fillRect(0,0,N,N);
+ // land, deserts, ice
+ for(const k in LAND)poly(LAND[k],'#3f8a3c');
+ c.filter='blur('+(N/120)+'px)';c.globalAlpha=0.6;poly([[-77,3],[-62,5],[-52,1],[-47,-5],[-55,-12],[-66,-13],[-75,-8]],'#22692a');poly([[-15,8],[10,6],[28,3],[30,-8],[14,-6],[8,2]],'#22692a');c.globalAlpha=1;c.filter='none';
+ for(const k in DES)poly(DES[k],'#c8ad74');
+ poly(LAND.grl,'#eef3f7');poly(LAND.ell,'#e6eef4');
+ {c.beginPath();for(let lon=-180;lon<=180;lon+=3){const q=pr(lon,81+3*Math.sin(lon*D2R*3));lon==-180?c.moveTo(q[0],q[1]):c.lineTo(q[0],q[1]);}
+  for(let lon=180;lon>=-180;lon-=6){const q=pr(lon,90);c.lineTo(q[0],q[1]);}c.closePath();c.fillStyle='rgba(240,246,250,0.92)';c.fill();}
+ // clouds
+ let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+ c.filter='blur('+(N/170)+'px)';
+ const cloud=(lon,lat,w,h,a)=>{const v=vis(lon,lat);if(v<0.05)return;const q=pr(lon,lat),q2=pr(lon+1,lat),ang=Math.atan2(q2[1]-q[1],q2[0]-q[0]);
+   c.save();c.translate(q[0],q[1]);c.rotate(ang);c.scale(1,Math.max(0.25,v));c.fillStyle='rgba(255,255,255,'+a+')';c.beginPath();c.ellipse(0,0,w*R,h*R*0.9,0,0,7);c.fill();c.restore();};
+ for(let i=0;i<70;i++){const lat=(rnd()-0.5)*14+4,lon=-170+rnd()*200;cloud(lon,lat,0.03+rnd()*0.05,0.012+rnd()*0.02,0.35+rnd()*0.3);}
+ for(let s=0;s<6;s++){const lat0c=(s%2?-1:1)*(38+rnd()*16),lonc=-150+s*32+rnd()*20;
+   for(let i=0;i<26;i++){const f=i/26,lon=lonc+f*55,lat=lat0c+(s%2?-1:1)*(-10*Math.sin(f*3.2));cloud(lon,lat,0.05+rnd()*0.05,0.012+rnd()*0.015,0.35+rnd()*0.35);}}
+ for(let i=0;i<90;i++){const lat=(rnd()<0.5?-1:1)*(15+rnd()*60),lon=-180+rnd()*220;cloud(lon,lat,0.015+rnd()*0.035,0.008+rnd()*0.015,0.25+rnd()*0.35);}
+ c.filter='none';
+ // sunlight from the upper left, night side toward the lower right
+ gr=c.createRadialGradient(C-R*0.45,C-R*0.45,R*0.1,C-R*0.2,C-R*0.2,R*1.55);
+ gr.addColorStop(0,'rgba(255,255,255,0.10)');gr.addColorStop(0.45,'rgba(0,0,0,0)');gr.addColorStop(0.78,'rgba(0,6,25,0.35)');gr.addColorStop(1,'rgba(0,4,18,0.8)');
+ c.fillStyle=gr;c.fillRect(0,0,N,N);
+ // thin blue atmosphere at the edge
+ gr=c.createRadialGradient(C,C,R*0.82,C,C,R);gr.addColorStop(0,'rgba(120,190,255,0)');gr.addColorStop(1,'rgba(150,205,255,0.55)');c.fillStyle=gr;c.fillRect(0,0,N,N);
+ c.restore();return g;})();
+// ---------- helpers ----------
+const cv=document.getElementById('c'),cx=cv.getContext('2d');let W=0,H=0,dpr=1,f=1,ox=0,oy=0;
+const VW=1600,VH=900;
+function fit(){dpr=window.devicePixelRatio||1;W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;f=Math.min(W/VW,H/VH);ox=(W-VW*f)/2;oy=(H-VH*f)/2;}
+addEventListener('resize',fit);
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ramp=(t,a,b)=>cl((t-a)/(b-a),0,1);
+const sm=u=>u*u*(3-2*u);
+const fade=(t,a,b,d=0.6)=>Math.min(ramp(t,a,a+d),1-ramp(t,b-d,b));
+function txt(s,x,y,size,color,align='left',weight='bold',alpha=1){cx.globalAlpha=alpha;cx.font=weight+' '+size+'px Arial';cx.fillStyle=color;cx.textAlign=align;cx.fillText(s,x,y);cx.globalAlpha=1;}
+function wrap(s,x,y,maxW,size,lh,color,weight='',align='left',alpha=1){cx.font=(weight?weight+' ':'')+size+'px Arial';cx.fillStyle=color;cx.textAlign=align;cx.globalAlpha=alpha;
+ const words=s.split(' ');let line='',yy=y;for(const w of words){const test=line?line+' '+w:w;if(cx.measureText(test).width>maxW&&line){cx.fillText(line,x,yy);line=w;yy+=lh;}else line=test;}if(line)cx.fillText(line,x,yy);cx.globalAlpha=1;return yy;}
+function panel(x,y,w,h,a=0.85){cx.fillStyle='rgba(11,20,36,'+a+')';cx.beginPath();cx.roundRect?cx.roundRect(x,y,w,h,10):cx.rect(x,y,w,h);cx.fill();}
+function caption(title,body,alpha=1){if(alpha<=0)return;panel(20,772,VW-40,112);txt(title,44,812,28,'#F2A541','left','bold',alpha);wrap(body,44,850,VW-90,22,28,'#E8EEF5','','left',alpha);}
+const stars=[...Array(260)].map(()=>[Math.random(),Math.random(),Math.random()*1.4+0.3]);
+function earth(x,y,r){const gl=cx.createRadialGradient(x,y,r*0.9,x,y,r*1.3);gl.addColorStop(0,'rgba(110,180,255,0.5)');gl.addColorStop(1,'rgba(60,120,255,0)');
+ cx.fillStyle=gl;cx.beginPath();cx.arc(x,y,r*1.3,0,7);cx.fill();cx.drawImage(GLOBE,x-r,y-r,2*r,2*r);}
+function sun(x,y,r){const g=cx.createRadialGradient(x,y,0,x,y,r*3);g.addColorStop(0,'rgba(255,250,220,1)');g.addColorStop(0.25,'rgba(255,210,90,0.9)');g.addColorStop(0.5,'rgba(255,160,40,0.25)');g.addColorStop(1,'rgba(255,140,20,0)');
+ cx.fillStyle=g;cx.beginPath();cx.arc(x,y,r*3,0,7);cx.fill();}
+// Voyager, side view, high-gain dish facing left (toward Earth). Origin = center of the 10-sided body.
+function voyager(x,y,s,recGlow=0){cx.save();cx.translate(x,y);cx.scale(s,s);cx.lineCap='round';
+ cx.strokeStyle='#8e98a4';cx.lineWidth=0.9;cx.beginPath();cx.moveTo(10,-6);cx.lineTo(95,-78);cx.stroke(); // magnetometer boom
+ cx.strokeStyle='#a9b1bb';cx.lineWidth=2;cx.beginPath();cx.moveTo(12,7);cx.lineTo(46,38);cx.stroke(); // power (RTG) boom
+ cx.save();cx.translate(46,38);cx.rotate(Math.atan2(31,34));for(let k=0;k<3;k++){cx.fillStyle='#4c525a';cx.fillRect(-4-k*10,-4.5,8,9);cx.fillStyle='#6d747d';for(let j=0;j<4;j++)cx.fillRect(-4-k*10+j*2,-6.5,1,13);}cx.restore();
+ cx.lineWidth=2;cx.beginPath();cx.moveTo(12,-8);cx.lineTo(40,-34);cx.stroke(); // science boom
+ cx.save();cx.translate(40,-34);cx.fillStyle='#6b7380';cx.fillRect(-2,-7,14,10);cx.fillStyle='#d9dde2';cx.fillRect(10,-6,10,4);cx.fillRect(10,-1,7,3);cx.restore();
+ cx.fillStyle='#3a3f47';cx.fillRect(2,-10,22,20);cx.fillStyle='#565d67';cx.fillRect(2,-10,22,3);cx.fillStyle='#2c3037';cx.fillRect(2,7,22,3); // body
+ if(recGlow>0){const g=cx.createRadialGradient(15,0,0,15,0,16);g.addColorStop(0,'rgba(255,210,90,'+0.8*recGlow+')');g.addColorStop(1,'rgba(255,190,60,0)');cx.fillStyle=g;cx.beginPath();cx.arc(15,0,16,0,7);cx.fill();}
+ cx.fillStyle='#d4a63a';cx.beginPath();cx.arc(15,0,6.2,0,7);cx.fill();cx.fillStyle='#b8892a';cx.beginPath();cx.arc(15,0,1.6,0,7);cx.fill(); // Golden Record
+ let g=cx.createLinearGradient(-14,0,4,0);g.addColorStop(0,'#ffffff');g.addColorStop(1,'#b9c1ca');
+ cx.fillStyle=g;cx.beginPath();cx.ellipse(-2,0,9,34,0,0,7);cx.fill(); // high-gain dish
+ cx.fillStyle='rgba(150,160,175,0.55)';cx.beginPath();cx.ellipse(-4,0,5.5,28,0,0,7);cx.fill();
+ cx.strokeStyle='#c9d0d8';cx.lineWidth=1;cx.beginPath();cx.moveTo(-6,-22);cx.lineTo(-20,0);cx.lineTo(-6,22);cx.stroke();cx.fillStyle='#e6e9ed';cx.fillRect(-23,-3,4,6);
+ cx.restore();}
+// ---------- the map (chapters 1 and 2): distances to scale ----------
+const SUN={x:110,y:430}, KAU=(1470-110)/173.1, DIR=-3*D2R;
+const ORB=[['Earth',1,'#4f9be8'],['Mars',1.52,'#d0704a'],['Jupiter',5.2,'#d8b48a'],['Saturn',9.54,'#e3cf8f'],['Uranus',19.2,'#9fd9e0'],['Neptune',30.07,'#5a7fe0']];
+const onLine=au=>({x:SUN.x+Math.cos(DIR)*au*KAU,y:SUN.y+Math.sin(DIR)*au*KAU});
+const EARTH0={x:SUN.x+Math.cos(-50*D2R)*KAU,y:SUN.y+Math.sin(-50*D2R)*KAU};
+function vPos(au){if(au<=5.2){const u=sm(ramp(au,1,5.2)),a=EARTH0,b=onLine(5.2);return{x:a.x+(b.x-a.x)*u,y:a.y+(b.y-a.y)*u};}return onLine(au);}
+function auOfYear(y){if(y<1977.7)return 1;if(y<1979.2)return 1+(y-1977.7)/1.5*4.2;if(y<1980.9)return 5.2+(y-1979.2)/1.7*4.3;return Math.min(173.1,9.5+3.57*(y-1980.9));}
+const HP=121.6;
+function drawMap(au,trail=true){
+ cx.lineWidth=1;ORB.forEach(o=>{cx.strokeStyle='rgba(140,170,210,0.28)';cx.beginPath();cx.arc(SUN.x,SUN.y,o[1]*KAU,0,7);cx.stroke();});
+ // heliopause arc
+ cx.setLineDash([8,8]);cx.strokeStyle='rgba(120,200,255,0.45)';cx.lineWidth=2;cx.beginPath();cx.arc(SUN.x,SUN.y,HP*KAU,-30*D2R,24*D2R);cx.stroke();cx.setLineDash([]);
+ const hl=onLine(HP);txt('Heliopause',hl.x+8,hl.y+150,17,'#8fc8ff','left','bold');txt('edge of the Sun’s bubble',hl.x+8,hl.y+172,15,'#8fb3d1','left','');
+ txt('Interstellar space',hl.x+260,hl.y+235,18,'rgba(232,238,245,0.55)','left','italic');
+ sun(SUN.x,SUN.y,9);
+ ORB.forEach((o,i)=>{const p=i==0?EARTH0:i==1?{x:SUN.x+Math.cos(120*D2R)*o[1]*KAU,y:SUN.y+Math.sin(120*D2R)*o[1]*KAU}:i<4?onLine(o[1]):{x:SUN.x+Math.cos((i==4?40:-140)*D2R)*o[1]*KAU,y:SUN.y+Math.sin((i==4?40:-140)*D2R)*o[1]*KAU};
+  cx.fillStyle=o[2];cx.beginPath();cx.arc(p.x,p.y,i<2?2.5:i<4?5:4,0,7);cx.fill();});
+ txt('Neptune’s orbit',SUN.x,SUN.y+30.07*KAU+22,15,'#8fb3d1','center','');
+ txt('Sun',SUN.x,SUN.y-20,15,'#ffd27a','center','bold');
+ if(trail){const n=Math.max(2,Math.ceil(au*2));cx.strokeStyle='#F2A541';cx.lineWidth=3;cx.beginPath();for(let i=0;i<=n;i++){const q=vPos(1+(au-1)*i/n);i?cx.lineTo(q.x,q.y):cx.moveTo(q.x,q.y);}cx.stroke();}
+ const v=vPos(au);voyager(v.x,v.y,0.42);return v;}
+function flag(p,label,sub,dy,alpha){if(alpha<=0)return;cx.globalAlpha=alpha;cx.strokeStyle='rgba(242,165,65,0.8)';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(p.x,p.y);cx.lineTo(p.x,p.y+dy);cx.stroke();
+ cx.fillStyle='#F2A541';cx.beginPath();cx.arc(p.x,p.y,4,0,7);cx.fill();cx.globalAlpha=1;const y=p.y+dy+(dy<0?-8:22);txt(label,p.x,y-(dy<0&&sub?20:0),18,'#F2A541','center','bold',alpha);if(sub)txt(sub,p.x,y+(dy<0?0:22),16,'#E8EEF5','center','',alpha);}
+// ---------- chapters ----------
+const CH=[{n:'1 Journey',a:0,b:15},{n:'2 Light-day',a:15,b:38},{n:'3 Messages',a:38,b:60},{n:'4 How far?',a:60,b:84},{n:'5 Golden Record',a:84,b:116}];
+const TOTAL=116;
+function yearAt(u){if(u<2)return 1977.7;if(u<5)return 1977.7+(u-2)/3*3.3;if(u<12.5)return 1981+(u-5)/7.5*45.88;return 2026.88;}
+function ch1(u){const yr=yearAt(u),au=auOfYear(yr),v=drawMap(au);
+ const EV=[[1979.2,'1979–80','Jupiter and Saturn flybys',5.2,-60],[1990.1,'1990','Pale Blue Dot photo of Earth',40.5,70],[2012.6,'2012','Enters interstellar space',HP,-90],[2026.88,'Nov. 18, 2026','One light-day from Earth',173.1,80]];
+ EV.forEach(e=>{if(yr>=e[0])flag(onLine(e[3]),e[1],e[2],e[4],(e[0]==2026.88?ramp(u,12.5,13.2):ramp(yr,e[0],e[0]+0.8)));});
+ panel(20,20,520,92);txt('YEAR',44,50,14,'#8fb3d1','left','');txt(Math.floor(yr).toString(),44,96,40,'#E8EEF5');
+ txt('DISTANCE FROM THE SUN',200,50,14,'#8fb3d1','left','');txt((au*0.09296).toFixed(1)+' billion miles',200,96,32,'#E8EEF5');
+ txt('Distances to scale. Sizes are not.',VW-30,752,15,'rgba(232,238,245,0.6)','right','italic');
+ const tt=fade(u,0,2.2,0.5);if(tt>0){txt('Voyager 1: One Light-Day From Earth',VW/2,330,52,'#E8EEF5','center','bold',tt);txt('Launched 1977. Still going.',VW/2,385,26,'#c9d6e3','center','',tt);}
+ if(u<12.5)caption('The journey','Voyager 1 launched in 1977. It flew past Jupiter and Saturn, then kept going. In 2012 it became the first spacecraft to reach interstellar space.',ramp(u,1.6,2.4));
+ else caption('A new record','On November 18, 2026, Voyager 1 became the first spacecraft to reach one light-day from Earth: about 16.1 billion miles (25.9 billion km) away.');}
+const LT=[['Earth',1,'8 min 20 s'],['Jupiter',5.2,'43 min'],['Saturn',9.54,'1 hr 19 min'],['Uranus',19.2,'2 hr 40 min'],['Neptune',30.07,'4 hr 10 min'],['Heliopause',HP,'about 17 hr'],['Voyager 1',173.1,'24 hr = 1 light-day']];
+function hms(h){const s=Math.round(h*3600),H=Math.floor(s/3600),M=Math.floor(s%3600/60),S=s%60;return H+' hr '+String(M).padStart(2,'0')+' min '+String(S).padStart(2,'0')+' s';}
+function ch2(u){drawMap(173.1);
+ const h=u<3?0:Math.min(24,(u-3)/18*24),au=h/0.138617;
+ if(u>=3){const r=au*KAU;cx.save();cx.beginPath();cx.rect(0,130,VW,630);cx.clip();
+  const g=cx.createRadialGradient(SUN.x,SUN.y,Math.max(0,r-26),SUN.x,SUN.y,r+3);g.addColorStop(0,'rgba(255,230,140,0)');g.addColorStop(0.85,'rgba(255,230,140,0.35)');g.addColorStop(1,'rgba(255,245,200,0.95)');
+  cx.fillStyle=g;cx.beginPath();cx.arc(SUN.x,SUN.y,r+3,0,7);cx.fill();cx.restore();}
+ panel(20,20,560,92);txt('TIME SINCE THE FLASH LEFT THE SUN',44,50,14,'#8fb3d1','left','');txt(u<3?'Ready...':hms(h),44,96,34,'#ffe08a');
+ const px=VW-430;panel(px,20,410,40+LT.length*34);txt('SUNLIGHT REACHES...',px+20,50,14,'#8fb3d1','left','');
+ LT.forEach((l,i)=>{const on=au>=l[1],y=86+i*34;txt(l[0],px+20,y,19,on?'#E8EEF5':'rgba(232,238,245,0.3)','left','bold');txt(on?l[2]:'',px+390,y,19,i==LT.length-1?'#F2A541':'#ffe08a','right','bold');});
+ if(u<3)caption('What is a light-day?','Light travels about 186,000 miles every second. A light-day is how far light goes in one whole day: about 16.1 billion miles. Watch a flash of sunlight race outward.');
+ else if(u<21)caption('A flash of sunlight','In this animation, 1 second = about 1 hour 20 minutes. Earth is so close to the Sun on this scale that the light reaches it almost instantly.');
+ else caption('One light-day','Sunlight takes about 4 hours to reach Neptune, and about 20 more hours to reach Voyager 1. That full day of travel is one light-day.');}
+function clock(H){const tot=9+H,day=1+Math.floor(tot/24),hr=Math.floor(tot%24),mn=Math.floor((tot*60)%60),h12=hr%12||12;return'Day '+day+', '+h12+':'+String(mn).padStart(2,'0')+(hr<12?' AM':' PM');}
+function ch3(u){const E={x:230,y:400},V={x:1380,y:400};
+ cx.setLineDash([4,10]);cx.strokeStyle='rgba(140,170,210,0.35)';cx.lineWidth=2;cx.beginPath();cx.moveTo(E.x+110,E.y);cx.lineTo(V.x-90,V.y);cx.stroke();cx.setLineDash([]);
+ txt('16.1 billion miles',(E.x+V.x)/2,E.y+60,22,'#8fb3d1','center','bold');txt('(not to scale)',(E.x+V.x)/2,E.y+88,15,'rgba(232,238,245,0.55)','center','italic');
+ earth(E.x,E.y,95);txt('Earth',E.x,E.y+140,20,'#E8EEF5','center');voyager(V.x,V.y,2.2);txt('Voyager 1',V.x+20,V.y+140,20,'#E8EEF5','center');
+ const out=ramp(u,2,10),back=ramp(u,12,20),H=u<10?out*24:u<12?24:24+back*24;
+ const pkt=(k,col,d)=>{const x=E.x+110+(V.x-90-E.x-110)*k,a0=d>0?0:Math.PI;for(let j=0;j<4;j++){cx.strokeStyle=col.replace('A',(0.9-j*0.2).toFixed(2));cx.lineWidth=3;cx.beginPath();cx.arc(x-d*j*14,E.y,22-j*3,a0-0.7,a0+0.7);cx.stroke();}
+  cx.fillStyle=col.replace('A','1');cx.beginPath();cx.arc(x,E.y,6,0,7);cx.fill();};
+ if(u>=2&&u<10)pkt(out,'rgba(90,190,255,A)',1);
+ if(u>=12&&u<20)pkt(1-back,'rgba(110,240,160,A)',-1);
+ panel(20,20,470,92);txt('CLOCK ON EARTH',44,50,14,'#8fb3d1','left','');txt(clock(H),44,96,36,'#E8EEF5');
+ const st=[[2,'Command sent','#5abeff'],[10,'Voyager receives it','#ffe08a'],[12,'Reply sent','#6ef0a0'],[20,'Reply reaches Earth','#ffe08a']];
+ panel(VW-430,20,410,170);st.forEach((s,i)=>{const on=u>=s[0];txt((on?'✓ ':'• ')+s[1],VW-410,58+i*36,20,on?s[2]:'rgba(232,238,245,0.3)','left','bold');});
+ if(u<2)caption('Talking to Voyager','Engineers send commands to Voyager 1 with giant radio antennas. Radio waves travel at the speed of light.');
+ else if(u<10)caption('The command is on its way','Even moving at the speed of light, the message needs a whole day to get there.');
+ else if(u<12)caption('Message received','Voyager 1 gets the command one full day after it was sent.');
+ else if(u<20)caption('The reply','Voyager’s answer takes another full day to travel back to Earth.');
+ else caption('Two days for one answer','One question and one answer takes 2 whole days. Imagine sending a text and waiting 2 days for the reply.');}
+function race(y,label,aName,aTime,aDone,bName,bTime,bDone,u0,u){const x0=330,x1=1450;txt(label,60,y+8,24,'#E8EEF5','left','bold');
+ [[aName,aTime,aDone,-22,'#ffe08a'],[bName,bTime,bDone,22,'#F2A541']].forEach(r=>{const k=r[2];cx.strokeStyle='rgba(140,170,210,0.3)';cx.lineWidth=2;cx.beginPath();cx.moveTo(x0,y+r[3]);cx.lineTo(x1,y+r[3]);cx.stroke();
+  cx.strokeStyle=r[4];cx.lineWidth=6;cx.beginPath();cx.moveTo(x0,y+r[3]);cx.lineTo(x0+(x1-x0)*k,y+r[3]);cx.stroke();cx.fillStyle=r[4];cx.beginPath();cx.arc(x0+(x1-x0)*k,y+r[3],7,0,7);cx.fill();
+  txt(r[0],x0-14,y+r[3]+6,17,'#c9d6e3','right','');if(k>=1)txt(r[1],x1+14,y+r[3]+6,19,r[4],'left','bold');});}
+function ch4(u){
+ if(u<11){const a=fade(u,0,11,0.5);cx.globalAlpha=a;
+  txt('Light vs. spacecraft',VW/2,90,38,'#E8EEF5','center');
+  race(250,'To the Moon','Light','1.3 seconds',ramp(u,1,1.3),'Artemis II','about 3 days',ramp(u,1,5),1,u);
+  race(470,'To Voyager 1','Light','1 day',ramp(u,5.5,6.5),'Voyager 1','more than 49 years',ramp(u,5.5,10),5.5,u);
+  cx.globalAlpha=1;
+  caption('Light is fast. Spacecraft are not.','Light reaches the Moon in 1.3 seconds. The Artemis II crew took about 3 days. Light covers Voyager’s distance in 1 day. Voyager 1, moving about 38,000 mph, took more than 49 years.',a);}
+ else{const v=u-11,a=ramp(v,0,0.6);cx.globalAlpha=a;txt('How far is the nearest star?',VW/2,90,38,'#E8EEF5','center');cx.globalAlpha=1;
+  const N=1549,cols=62,sp=20,x0=(VW-(cols-1)*sp)/2,y0=150,shown=Math.floor(N*sm(ramp(v,1,6)));
+  for(let i=0;i<shown;i++){const c=i%cols,r=Math.floor(i/cols);cx.fillStyle=i==0?'#F2A541':'rgba(160,200,255,0.75)';cx.beginPath();cx.arc(x0+c*sp,y0+r*sp,i==0?7:5,0,7);cx.fill();}
+  if(v>1.2){txt('← Voyager 1 has traveled 1 dot',x0+16,y0-20,18,'#F2A541','left','bold');}
+  if(shown>=N){const c=(N-1)%cols,r=Math.floor((N-1)/cols),x=x0+c*sp,y=y0+r*sp;cx.strokeStyle='#ffe08a';cx.lineWidth=2;cx.beginPath();cx.arc(x,y,10,0,7);cx.stroke();
+   txt('Proxima Centauri, the nearest star',x+16,y+40,18,'#ffe08a','right','bold');}
+  if(v<7)caption('Each dot is one light-day','The nearest star to the Sun, Proxima Centauri, is about 4.24 light-years away. That is about 1,549 light-days.',a);
+  else caption('A long way to go','At Voyager 1’s speed, going that far would take more than 70,000 years. (Voyager 1 is not headed toward that star.)');}}
+// stylized Golden Record cover: three areas the cover explains
+function recordCover(x,y,r,a){cx.save();cx.translate(x,y);cx.globalAlpha=a;
+ let g=cx.createRadialGradient(-r*0.3,-r*0.3,r*0.1,0,0,r);g.addColorStop(0,'#f6d77a');g.addColorStop(0.6,'#d4a63a');g.addColorStop(1,'#9c7420');cx.fillStyle=g;cx.beginPath();cx.arc(0,0,r,0,7);cx.fill();
+ cx.strokeStyle='rgba(90,60,10,0.8)';cx.lineWidth=2;
+ // A: how to play (record + needle sketch, upper left)
+ cx.save();cx.translate(-r*0.45,-r*0.4);cx.beginPath();cx.arc(0,0,r*0.2,0,7);cx.stroke();cx.beginPath();cx.arc(0,0,r*0.04,0,7);cx.stroke();cx.beginPath();cx.moveTo(r*0.25,-r*0.15);cx.lineTo(r*0.08,r*0.02);cx.stroke();cx.restore();
+ // B: map showing where Earth is (lines from a center point, lower left)
+ cx.save();cx.translate(-r*0.4,r*0.38);[0,0.4,0.9,1.5,2.1,2.6,3.1,3.7,4.3,4.9,5.5,6.0].forEach((ang,i)=>{const L=r*(0.12+0.16*((i*7)%5)/4);cx.beginPath();cx.moveTo(0,0);cx.lineTo(Math.cos(ang)*L,Math.sin(ang)*L);cx.stroke();});cx.restore();
+ // C: clock / hydrogen key (two small circles, lower right)
+ cx.save();cx.translate(r*0.42,r*0.42);cx.beginPath();cx.arc(-r*0.08,0,r*0.06,0,7);cx.stroke();cx.beginPath();cx.arc(r*0.08,0,r*0.06,0,7);cx.stroke();cx.beginPath();cx.moveTo(-r*0.08,r*0.13);cx.lineTo(r*0.08,r*0.13);cx.stroke();cx.restore();
+ // D: picture decoding (upper right, rectangles)
+ cx.save();cx.translate(r*0.42,-r*0.4);cx.strokeRect(-r*0.15,-r*0.1,r*0.3,r*0.2);for(let k=-2;k<=2;k++){cx.beginPath();cx.moveTo(-r*0.15,k*r*0.04);cx.lineTo(r*0.15,k*r*0.04);cx.stroke();}cx.restore();
+ cx.beginPath();cx.arc(0,0,r*0.06,0,7);cx.stroke();cx.restore();cx.globalAlpha=1;}
+function recordDisc(x,y,r,spin,a){cx.save();cx.translate(x,y);cx.rotate(spin);cx.globalAlpha=a;
+ let g=cx.createRadialGradient(0,0,r*0.1,0,0,r);g.addColorStop(0,'#c99a33');g.addColorStop(1,'#a97c22');cx.fillStyle=g;cx.beginPath();cx.arc(0,0,r,0,7);cx.fill();
+ for(let k=0;k<26;k++){cx.strokeStyle='rgba(255,230,150,'+(0.12+0.1*(k%3==0))+')';cx.lineWidth=1.2;cx.beginPath();cx.arc(0,0,r*(0.36+0.62*k/26),0,7);cx.stroke();}
+ g=cx.createLinearGradient(-r,-r,r,r);g.addColorStop(0.35,'rgba(255,255,255,0)');g.addColorStop(0.5,'rgba(255,250,220,0.45)');g.addColorStop(0.65,'rgba(255,255,255,0)');cx.fillStyle=g;cx.beginPath();cx.arc(0,0,r,0,7);cx.fill();
+ cx.fillStyle='#e8c25a';cx.beginPath();cx.arc(0,0,r*0.3,0,7);cx.fill();cx.fillStyle='#6b4f14';cx.beginPath();cx.arc(0,0,r*0.035,0,7);cx.fill();
+ cx.fillStyle='rgba(90,60,10,0.7)';cx.font='bold '+(r*0.07)+'px Arial';cx.textAlign='center';cx.fillText('THE SOUNDS OF EARTH',0,-r*0.12);cx.font=(r*0.05)+'px Arial';cx.fillText('UNITED STATES OF AMERICA',0,r*0.15);
+ cx.restore();cx.globalAlpha=1;}
+const CONTENTS=[['115 images','Pictures of Earth and life on it'],['Greetings in 55 languages','From Akkadian, an ancient language, to Wu, a modern Chinese dialect'],['Sounds of Earth','Surf, wind, thunder, birds, whales, and other animals'],['90 minutes of music','From many cultures around the world'],['Printed messages','From U.S. President Jimmy Carter and U.N. Secretary-General Kurt Waldheim'],['Who chose it?','A committee led by astronomer Carl Sagan']];
+function ch5(u){
+ if(u<6){const a=fade(u,0,6,0.6),z=1+sm(ramp(u,0,4))*1.6;cx.globalAlpha=a;voyager(760,420,3.2*z/1.6,0.4+0.6*Math.abs(Math.sin(u*2)));cx.globalAlpha=1;
+  if(u>2.5){const rx=760+15*3.2*z/1.6,al=ramp(u,2.5,3.2);txt('Golden Record',rx-60,690,26,'#ffd27a','center','bold',al);cx.globalAlpha=al;cx.strokeStyle='#ffd27a';cx.lineWidth=2;cx.beginPath();cx.moveTo(rx-60,662);cx.lineTo(rx-6,420+6.5*3.2*z/1.6);cx.stroke();cx.globalAlpha=1;}
+  caption('The Golden Record','Attached to the side of Voyager 1 is a message from Earth: a 12-inch, gold-plated copper record. Voyager 2 carries one too.',a);}
+ else if(u<14){const v=u-6,a=fade(v,0,8,0.6);recordCover(500,400,270,a);
+  const CO=[['Instructions for playing it',-0.45,-0.4],['A picture key for decoding the images',0.42,-0.4],['A map that shows where Earth is',-0.4,0.38],['A way to tell how long it has been in space',0.42,0.42]];
+  CO.forEach((c,i)=>{const al=Math.min(a,ramp(v,0.8+i*1.4,1.4+i*1.4));if(al<=0)return;const px=500+c[1]*270,py=400+c[2]*270,ty=170+i*120;
+   cx.globalAlpha=al;cx.strokeStyle='#ffe08a';cx.lineWidth=2;cx.beginPath();cx.arc(px,py,i==1?52:48,0,7);cx.stroke();cx.beginPath();cx.moveTo(px+(px<500?-40:50),py);cx.lineTo(px+(px<500?-40:50),py);cx.moveTo(px+50,py);cx.lineTo(900,ty-8);cx.stroke();cx.globalAlpha=1;
+   cx.fillStyle='#F2A541';cx.globalAlpha=al;cx.beginPath();cx.arc(900,ty-8,6,0,7);cx.fill();cx.globalAlpha=1;wrap(c[0],920,ty,600,26,32,'#E8EEF5','bold','left',al);});
+  caption('The cover is a set of instructions','Drawings on the cover explain how to play the record, how to turn its signals into pictures, where Earth is, and how long the record has been traveling. (Simplified drawing.)',a);}
+ else if(u<28){const v=u-14,a=ramp(v,0,0.6);recordDisc(430,400,280,v*2*Math.PI*(50/3)/60,a);
+  txt('Spins at 16⅔ turns per minute',430,730,18,'#c9d6e3','center','',a);
+  CONTENTS.forEach((c,i)=>{const al=ramp(v,0.8+i*2,1.4+i*2);if(al<=0)return;const y=130+i*102;panel(800,y,760,88,0.9*al);cx.globalAlpha=al;cx.fillStyle='#F2A541';cx.fillRect(800,y,6,88);cx.globalAlpha=1;
+   txt(c[0],826,y+36,24,'#ffd27a','left','bold',al);wrap(c[1],826,y+68,710,19,24,'#E8EEF5','','left',al);});
+  caption('What is on the record?','The record holds pictures and sounds chosen to show what life on Earth is like. It comes with a cartridge and needle so it can be played.',a);}
+ else{const v=u-28,a=ramp(v,0,0.6);recordDisc(430,400,280,(14+v)*2*Math.PI*(50/3)/60,0.35);
+  panel(760,180,800,400,0.9);cx.globalAlpha=a;
+  wrap('Voyager would need about 40,000 years just to come close to another planetary system.',800,250,720,30,40,'#E8EEF5','bold','left',a);
+  txt('THINK ABOUT IT',800,400,18,'#F2A541','left','bold',a);
+  wrap('If you could add one sound or one picture from today to the record, what would it be? Why would it help someone understand Earth?',800,445,720,26,36,'#E8EEF5','','left',a);cx.globalAlpha=1;
+  caption('A message in a bottle','Voyager 1 is still traveling at about 38,000 mph, carrying its record farther from home every second.',a);}}
+// ---------- main draw ----------
+function draw(T){cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle='#070c18';cx.fillRect(0,0,W,H);
+ stars.forEach(s=>{cx.fillStyle='rgba(255,255,255,'+(0.2+s[2]*0.3)+')';cx.fillRect(s[0]*W,s[1]*H,s[2],s[2]);});
+ cx.setTransform(dpr*f,0,0,dpr*f,dpr*ox,dpr*oy);
+ const i=CH.findIndex(c=>T<c.b),k=i<0?CH.length-1:i,u=T-CH[k].a;
+ [ch1,ch2,ch3,ch4,ch5][k](u);
+ chBtns.forEach((b,j)=>b.classList.toggle('on',j==k));}
+// ---------- controls ----------
+const chapEl=document.getElementById('chap'),chBtns=CH.map((c,j)=>{const b=document.createElement('button');b.textContent=c.n;b.onclick=()=>{T=c.a;setPlay(true);};chapEl.appendChild(b);return b;});
+fit();let T=0,playing=true,last=performance.now(),hold=-1;
+const pb=document.getElementById('play'),sr=document.getElementById('scrub'),tm=document.getElementById('time');
+function setPlay(v){playing=v;pb.textContent=v?'Pause':'Play';last=performance.now();}
+pb.onclick=()=>{if(!playing&&T>=TOTAL-0.01)T=0;if(!playing&&hold>=0){T=hold;hold=-1;}setPlay(!playing);};
+document.getElementById('again').onclick=()=>{T=0;hold=-1;setPlay(true);};
+sr.oninput=()=>{T=+sr.value;hold=-1;setPlay(false);};
+document.getElementById('fs').onclick=()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();};
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();pb.click();}});
+function loop(now){if(playing){const nT=T+(now-last)/1000;const end=CH.find(c=>T<c.b&&nT>=c.b&&c.b<TOTAL);
+  if(end){T=end.b-0.001;hold=end.b;setPlay(false);}else{T=nT;if(T>=TOTAL){T=TOTAL-0.001;setPlay(false);}}}
+ last=now;draw(T);sr.value=T;tm.textContent=T.toFixed(1)+' s';requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script></body></html>
