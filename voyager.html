@@ -13,6 +13,7 @@ html,body{margin:0;height:100%;background:#070c18;overflow:hidden;font-family:Ar
 #scrub{flex:1;min-width:60px;accent-color:#F2A541}
 #time{font:14px monospace;min-width:58px;text-align:right}
 @media (max-width:900px){#chap button{font-size:11px;padding:6px 6px}#fs{display:none}}
+@media (max-width:700px){#chap,#snd{display:none}}
 #photo{position:absolute;right:16px;top:16px;width:min(360px,40vw);background:rgba(11,20,36,0.95);border:1px solid #3FA7D6;border-radius:10px;padding:10px;box-sizing:border-box;opacity:0;transform:translateY(-8px);transition:opacity .4s,transform .4s;pointer-events:none;cursor:zoom-in}
 #photo.on{opacity:1;transform:none;pointer-events:auto}
 #photo .tag{font:bold 12px Arial;color:#F2A541;letter-spacing:.04em;margin-bottom:6px}
@@ -22,15 +23,24 @@ html,body{margin:0;height:100%;background:#070c18;overflow:hidden;font-family:Ar
 #photo .cr{margin-top:6px;font-size:11px;color:#8fb3d1}
 #big{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;flex-direction:column;padding:16px;box-sizing:border-box;z-index:5;cursor:zoom-out}
 #big.on{display:flex}#big img{max-width:100%;max-height:80vh;border-radius:6px}#big p{max-width:900px;text-align:center;font-size:17px;line-height:1.4;color:#E8EEF5}
+#pred{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.96);width:min(760px,92vw);background:rgba(11,20,36,0.97);border:2px solid #F2A541;border-radius:14px;padding:26px 30px;box-sizing:border-box;opacity:0;pointer-events:none;transition:opacity .35s,transform .35s;z-index:4;box-shadow:0 0 60px rgba(242,165,65,0.25)}
+#pred.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+#pred .tag{font:bold 14px Arial;color:#F2A541;letter-spacing:.08em}
+#pred h2{font-size:clamp(20px,3vw,30px);line-height:1.25;margin:10px 0 18px}
+#pred .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+#pred .opts button{background:#13233b;color:#E8EEF5;border:1px solid #2b4a6b;border-radius:8px;padding:14px;font:bold clamp(15px,2vw,20px) Arial;text-align:left;cursor:pointer}
+#pred .opts button.pick{background:#F2A541;color:#0B1424;border-color:#F2A541}
+#go{background:#3FA7D6;color:#0B1424;border:0;border-radius:8px;font:bold 18px Arial;padding:12px 22px;cursor:pointer}
 #gal{position:absolute;display:none;color:#3FA7D6;font:bold 16px Arial;text-decoration:underline}
 </style></head><body>
 <canvas id="c"></canvas>
+<div id="pred"><div class="tag">PREDICT FIRST</div><h2></h2><div class="opts"></div><button id="go">Find out ▶</button></div>
 <div id="photo"><div class="tag">PHOTO FROM VOYAGER</div><img alt=""><h3></h3><p class="cap"></p><div class="cr"></div></div>
 <div id="big"><img alt=""><p></p></div>
 <a id="gal" href="https://science.nasa.gov/mission/voyager/golden-record-contents/images/" target="_blank" rel="noopener">See some of the record’s pictures on NASA’s website ↗</a>
 <div id="bar"><button id="play">Pause</button><button id="again" class="alt">Replay</button>
 <div id="chap"></div>
-<input id="scrub" type="range" min="0" max="154" step="0.01" value="0" aria-label="Timeline"><span id="time">0.0 s</span><button id="fs" class="alt">Full screen</button></div>
+<input id="scrub" type="range" min="0" max="174" step="0.01" value="0" aria-label="Timeline"><span id="time">0.0 s</span><button id="snd" class="alt">Sound: On</button><button id="fs" class="alt">Full screen</button></div>
 <script>
 const D2R=Math.PI/180, GLON0=-98*D2R, GLAT0=22*D2R;
 const GLOBE=(()=>{const N=520,g=document.createElement('canvas');g.width=g.height=N;const c=g.getContext('2d'),R=N/2-1,C=N/2;
@@ -104,7 +114,7 @@ function wrap(s,x,y,maxW,size,lh,color,weight='',align='left',alpha=1){cx.font=(
  const words=s.split(' ');let line='',yy=y;for(const w of words){const test=line?line+' '+w:w;if(cx.measureText(test).width>maxW&&line){cx.fillText(line,x,yy);line=w;yy+=lh;}else line=test;}if(line)cx.fillText(line,x,yy);cx.globalAlpha=1;return yy;}
 function panel(x,y,w,h,a=0.85){cx.fillStyle='rgba(11,20,36,'+a+')';cx.beginPath();cx.roundRect?cx.roundRect(x,y,w,h,10):cx.rect(x,y,w,h);cx.fill();}
 function caption(title,body,alpha=1){if(alpha<=0)return;panel(20,772,VW-40,112);txt(title,44,812,28,'#F2A541','left','bold',alpha);wrap(body,44,850,VW-90,22,28,'#E8EEF5','','left',alpha);}
-const stars=[...Array(260)].map(()=>[Math.random(),Math.random(),Math.random()*1.4+0.3]);
+const stars=[...Array(320)].map(()=>[Math.random(),Math.random(),Math.random()*1.5+0.3,Math.random()*6.3,0.5+Math.random()*2]);
 function earth(x,y,r){const gl=cx.createRadialGradient(x,y,r*0.9,x,y,r*1.3);gl.addColorStop(0,'rgba(110,180,255,0.5)');gl.addColorStop(1,'rgba(60,120,255,0)');
  cx.fillStyle=gl;cx.beginPath();cx.arc(x,y,r*1.3,0,7);cx.fill();cx.drawImage(GLOBE,x-r,y-r,2*r,2*r);}
 function sun(x,y,r){const g=cx.createRadialGradient(x,y,0,x,y,r*3);g.addColorStop(0,'rgba(255,250,220,1)');g.addColorStop(0.25,'rgba(255,210,90,0.9)');g.addColorStop(0.5,'rgba(255,160,40,0.25)');g.addColorStop(1,'rgba(255,140,20,0)');
@@ -148,8 +158,8 @@ function drawMap(au,trail=true){
 function flag(p,label,sub,dy,alpha){if(alpha<=0)return;cx.globalAlpha=alpha;cx.strokeStyle='rgba(242,165,65,0.8)';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(p.x,p.y);cx.lineTo(p.x,p.y+dy);cx.stroke();
  cx.fillStyle='#F2A541';cx.beginPath();cx.arc(p.x,p.y,4,0,7);cx.fill();cx.globalAlpha=1;const y=p.y+dy+(dy<0?-8:22);txt(label,p.x,y-(dy<0&&sub?20:0),18,'#F2A541','center','bold',alpha);if(sub)txt(sub,p.x,y+(dy<0?0:22),16,'#E8EEF5','center','',alpha);}
 // ---------- chapters ----------
-const CH=[{n:'1 Journey',a:0,b:20},{n:'2 Light-day',a:20,b:50},{n:'3 Messages',a:50,b:72},{n:'4 Light vs. Voyager',a:72,b:92},{n:'5 Zoom out',a:92,b:122},{n:'6 Golden Record',a:122,b:154}];
-const TOTAL=154;
+const CH=[{n:'1 Journey',a:0,b:20},{n:'2 Light-day',a:20,b:50},{n:'3 Messages',a:50,b:77},{n:'4 Light vs. Voyager',a:77,b:97},{n:'5 Zoom out',a:97,b:142},{n:'6 Golden Record',a:142,b:174}];
+const TOTAL=174;
 // ---------- real photos (NASA/JPL-Caltech). [start, end] are timeline seconds; playback slows while a photo is up ----------
 const PSA=(n,dir)=>'https://assets.science.nasa.gov/content/dam/science/psd/photojournal/pia/'+dir+'/'+n.toLowerCase()+'/'+n+'.jpg/jcr:content/renditions/cq5dam.web.1280.1280.jpeg';
 const PHOTOS=[
@@ -157,10 +167,11 @@ const PHOTOS=[
  {a:5,b:6,src:[PSA('PIA00014','pia00')],t:'Jupiter’s Great Red Spot, 1979',c:'A giant storm wider than Earth, photographed as Voyager 1 approached Jupiter.',id:'PIA00014'},
  {a:6,b:7,src:[PSA('PIA00010','pia00')],t:'A volcano erupting on Io, 1979',c:'Voyager 1 discovered active volcanoes on Io, one of Jupiter’s moons. The plume of the volcano Loki rises above Io’s edge.',id:'PIA00010'},
  {a:8.5,b:9.5,src:[PSA('PIA02271','pia02')],t:'Crescent Saturn, 1980',c:'Leaving Saturn, Voyager 1 looked back and saw the planet as a crescent. The dark band is the shadow of the rings.',id:'PIA02271'},
- {a:12,b:13,src:[PSA('PIA00452','pia00')],t:'The Pale Blue Dot, 1990',c:'From more than 4 billion miles away, Earth is the tiny speck in the band of light. These were among Voyager 1’s last pictures. Its cameras were then turned off to save power.',id:'PIA00452'},
- {a:123,b:124.6,src:[PSA('PIA21741','pia21')],t:'Getting the record ready, 1977',c:'The Golden Record is prepared for installation on Voyager 1.',id:'PIA21741'},
- {a:124.6,b:126.2,src:[PSA('PIA21740','pia21'),'https://d2pn8kiwq2w21t.cloudfront.net/original_images/jpegPIA21740.jpg'],t:'Installing the record, 1977',c:'Engineers secure the protective cover over Voyager 1’s Golden Record.',id:'PIA21740'},
- {a:126.2,b:127.8,src:[PSA('PIA14113','pia14')],t:'The Golden Record',c:'Each Voyager carries a 12-inch gold-plated record with images and sounds from Earth.',id:'PIA14113'}];
+ {a:12,b:13,src:[PSA('PIA00452','pia00')],t:'The Pale Blue Dot, 1990',c:'From more than 4 billion miles away, Earth is the tiny speck in the band of light. Every person in history lived on that speck. These were among Voyager 1’s last pictures. Its cameras were then turned off to save power.',id:'PIA00452'},
+ {a:143,b:144.6,src:[PSA('PIA21741','pia21')],t:'Getting the record ready, 1977',c:'The Golden Record is prepared for installation on Voyager 1.',id:'PIA21741'},
+ {a:144.6,b:146.2,src:[PSA('PIA21740','pia21'),'https://d2pn8kiwq2w21t.cloudfront.net/original_images/jpegPIA21740.jpg'],t:'Installing the record, 1977',c:'Engineers secure the protective cover over Voyager 1’s Golden Record.',id:'PIA21740'},
+ {a:146.2,b:147.8,src:[PSA('PIA14113','pia14')],t:'The Golden Record',c:'Each Voyager carries a 12-inch gold-plated record with images and sounds from Earth.',id:'PIA14113'}];
+const MPS=38000/3600, MILESTONE=Date.UTC(2026,10,18,10,16,7), PAGE0=Date.now();
 // ---------- chapter 1: the journey ----------
 const YK=[[0,1977.68],[2,1977.68],[3,1977.72],[5,1979.17],[7,1979.21],[8.5,1980.86],[9.5,1980.88],[12,1990.1],[13,1990.13],[17,2026.88]];
 function yearAt(u){if(u<=YK[0][0])return YK[0][1];for(let i=1;i<YK.length;i++)if(u<=YK[i][0]){const a=YK[i-1],b=YK[i];return a[1]+(b[1]-a[1])*(u-a[0])/(b[0]-a[0]);}return 2026.88;}
@@ -170,9 +181,11 @@ function ch1(u){const yr=yearAt(u),au=auOfYear(yr);drawMap(au);
  panel(20,20,520,92);txt('YEAR',44,50,14,'#8fb3d1','left','');txt(Math.floor(yr).toString(),44,96,40,'#E8EEF5');
  txt('DISTANCE FROM THE SUN',200,50,14,'#8fb3d1','left','');txt((au*0.09296).toFixed(1)+' billion miles',200,96,32,'#E8EEF5');
  txt('Distances to scale. Sizes are not.',VW-30,752,15,'rgba(232,238,245,0.6)','right','italic');
- const tt=fade(u,0,2.2,0.5);if(tt>0){txt('Voyager 1: One Light-Day From Earth',VW/2,330,52,'#E8EEF5','center','bold',tt);txt('Launched 1977. Still going.',VW/2,385,26,'#c9d6e3','center','',tt);}
+ const tt=fade(u,0,2.2,0.5);if(tt>0){txt('Voyager 1: One Light-Day From Earth',VW/2,330,52,'#E8EEF5','center','bold',tt);txt('How far can something we built go?',VW/2,385,28,'#c9d6e3','center','',tt);}
  if(u<17)caption('The journey','Voyager 1 launched in 1977. It flew past Jupiter and Saturn, taking pictures along the way, then kept going. In 2012 it became the first spacecraft to reach interstellar space.',ramp(u,1.6,2.4));
- else caption('A new record','On November 18, 2026, Voyager 1 became the first spacecraft to reach one light-day from Earth: about 16.1 billion miles (25.9 billion km) away.');}
+ else{const ba=ramp(u,17,17.5),n=Math.round(16094799096*sm(ramp(u,17,18.8)));panel(380,140,840,150,0.92*ba);
+  txt(n.toLocaleString()+' miles',VW/2,222,60,'#F2A541','center','bold',ba);txt('from Earth. Farther than anything humans have ever built.',VW/2,262,22,'#E8EEF5','center','',ba);}
+ if(u>=17)caption('A new record','On November 18, 2026, Voyager 1 became the first spacecraft to reach one light-day from Earth: about 16.1 billion miles (25.9 billion km) away.');}
 // ---------- chapter 2: what is a light-day, and why it matters ----------
 const LT=[['Earth',1,'8 min 20 s'],['Jupiter',5.2,'43 min'],['Saturn',9.54,'1 hr 19 min'],['Uranus',19.2,'2 hr 40 min'],['Neptune',30.07,'4 hr 10 min'],['Heliopause',HP,'about 17 hr'],['Voyager 1',173.1,'24 hr = 1 light-day']];
 function hms(h){const s=Math.round(h*3600),H=Math.floor(s/3600),M=Math.floor(s%3600/60),S=s%60;return H+' hr '+String(M).padStart(2,'0')+' min '+String(S).padStart(2,'0')+' s';}
@@ -213,7 +226,12 @@ function ch3(u){const E={x:230,y:400},V={x:1380,y:400};
  else if(u<10)caption('The command is on its way','Even moving at the speed of light, the message needs a whole day to get there.');
  else if(u<12)caption('Message received','Voyager 1 gets the command one full day after it was sent.');
  else if(u<20)caption('The reply','Voyager’s answer takes another full day to travel back to Earth.');
- else caption('Two days for one answer','One question and one answer takes 2 whole days. Imagine sending a text and waiting 2 days for the reply.');}
+ else if(u<22)caption('Two days for one answer','One question and one answer takes 2 whole days. Imagine sending a text and waiting 2 days for the reply.');
+ else{const a=ramp(u,22,22.6);cx.fillStyle='rgba(7,12,24,'+0.8*a+')';cx.fillRect(0,0,VW,VH);panel(170,130,1260,590,0.95*a);txt('How do we even hear it?',VW/2,200,38,'#F2A541','center','bold',a);
+  const F=[['A whisper of a radio','Voyager 1 sends its signal with less than half the power of a refrigerator light bulb.'],['A tiny trickle of power','By the time the signal reaches Earth, it carries a tiny fraction of a trillionth of a watt.'],['Giant ears','NASA catches it with dish antennas 230 feet wide, part of its Deep Space Network.']];
+  F.forEach((p,i)=>{const al=Math.min(a,ramp(u,23+i*1.2,23.6+i*1.2));cx.globalAlpha=al;cx.fillStyle='#F2A541';cx.beginPath();cx.arc(230,282+i*135,9,0,7);cx.fill();cx.globalAlpha=1;
+   txt(p[0],258,290+i*135,27,'#E8EEF5','left','bold',al);wrap(p[1],258,328+i*135,1120,21,28,'#c9d6e3','','left',al);});
+  caption('Listening across 16 billion miles','Voyager 1\u2019s power has dropped from about 470 watts at launch to a little over 210 watts today, but it is still talking to us.',a);}}
 // ---------- chapter 4: same trip, two travelers (each tiny square = 1 day) ----------
 const DAYS=17971; // Sept. 5, 1977 to Nov. 18, 2026
 function ch4(u){const a=ramp(u,0,0.6);
@@ -238,8 +256,15 @@ function ch4(u){const a=ramp(u,0,0.6);
  else caption('About 18,000 days','Light needed 1 day. Voyager 1 needed about 18,000 days, more than 49 years. Light is more than 17,000 times faster than Voyager 1.');}
 // ---------- chapter 5: zoom out ----------
 const LY=63241, PROX={r:4.24*LY,ang:5*D2R}, GALC={x:-26000*LY,y:0}, GALR=50000*LY;
-const ZK=[[0,7.86,110,430],[3,7.86,110,430],[7.5,0.0062,800,430],[12,0.0062,800,430],[14.5,0.0045,250,430],[18,0.0045,250,430],[24,2.0e-7,1150,430],[30,2.0e-7,1150,430]];
-function cam(u){for(let i=1;i<ZK.length;i++)if(u<=ZK[i][0]){const p=ZK[i-1],q=ZK[i],w=sm(ramp(u,p[0],q[0]));return{k:Math.exp(Math.log(p[1])+(Math.log(q[1])-Math.log(p[1]))*w),x:p[2]+(q[2]-p[2])*w,y:p[3]+(q[3]-p[3])*w};}const q=ZK[ZK.length-1];return{k:q[1],x:q[2],y:q[3]};}
+const EW={x:Math.cos(-50*D2R),y:Math.sin(-50*D2R)}, MOONW={x:EW.x+0.00257,y:EW.y};
+// camera keyframes: [u, k (pixels per AU), where the Sun sits on screen (x,y)]; for close-ups we pin Earth instead
+const sunAt=(k,sx,sy)=>({x:sx+EW.x*k,y:sy+EW.y*k}); // -> Earth's screen spot
+const ZK=[[0,6e6,{x:800,y:400}],[2.5,6e6,{x:800,y:400}],[6,1.1e5,{x:640,y:430}],[8.5,1.1e5,{x:640,y:430}],
+ [12,200,sunAt(200,640,470)],[14.5,200,sunAt(200,640,470)],[18.5,7.86,sunAt(7.86,110,430)],[22,7.86,sunAt(7.86,110,430)],
+ [25.5,0.0062,sunAt(0.0062,800,430)],[29,0.0062,sunAt(0.0062,800,430)],[31,0.0045,sunAt(0.0045,250,430)],[35,0.0045,sunAt(0.0045,250,430)],
+ [40,2.0e-7,sunAt(2e-7,1150,430)],[45,2.0e-7,sunAt(2e-7,1150,430)]];
+const ZOOMS=[2.5,8.5,14.5,22,29,35];
+function cam(u){for(let i=1;i<ZK.length;i++)if(u<=ZK[i][0]){const p=ZK[i-1],q=ZK[i],w=sm(ramp(u,p[0],q[0]));const k=Math.exp(Math.log(p[1])+(Math.log(q[1])-Math.log(p[1]))*w);return{k,E:{x:p[2].x+(q[2].x-p[2].x)*w,y:p[2].y+(q[2].y-p[2].y)*w}};}const q=ZK[ZK.length-1];return{k:q[1],E:q[2]};}
 let rs=11;const rnd=()=>{rs=(rs*16807)%2147483647;return rs/2147483647;};
 const OORT=[...Array(2200)].map(()=>{const r=Math.pow(10,3.4+rnd()*1.6),a=rnd()*Math.PI*2;return[r*Math.cos(a),r*Math.sin(a)*0.92,rnd()];});
 const GAL=(()=>{const N=1400,g=document.createElement('canvas');g.width=g.height=N;const c=g.getContext('2d'),C=N/2,R=N/2;
@@ -249,37 +274,55 @@ const GAL=(()=>{const N=1400,g=document.createElement('canvas');g.width=g.height
   const x=C+Math.cos(th)*(r+sp)*R*0.98,y=C+Math.sin(th)*(r+sp)*R*0.98,b=rnd();c.fillStyle=b>0.97?'rgba(255,180,200,0.8)':'rgba(190,210,255,'+(0.15+0.35*b)+')';c.fillRect(x,y,1.4,1.4);}
  for(let i=0;i<5000;i++){const r=Math.pow(rnd(),2)*R*0.95,a=rnd()*7;c.fillStyle='rgba(255,230,200,0.18)';c.fillRect(C+Math.cos(a)*r,C+Math.sin(a)*r,1.2,1.2);}
  c.globalCompositeOperation='source-over';return g;})();
-function lightUnits(au){const ld=au/173.1;if(ld<1)return(au*8.317/60).toFixed(0)+' light-hours';if(ld<300)return ld.toFixed(ld<10?1:0)+' light-days';const ly=au/LY;return(ly<10?ly.toFixed(1):Math.round(ly).toLocaleString())+' light-years';}
-function ch5(u){const C=cam(u),k=C.k,S={x:C.x,y:C.y},P=(x,y)=>({x:S.x+x*k,y:S.y+y*k});
+
+function lightTime(au){const s=au*499;if(s<1)return s.toFixed(2)+' seconds';if(s<120)return s.toFixed(s<10?1:0)+' seconds';const m=s/60;if(m<120)return Math.round(m)+' minutes';const h=m/60;if(h<48)return h.toFixed(h<10?1:0)+' hours';const d=h/24;if(d<730)return Math.round(d)+' days';return Math.round(d/365.25).toLocaleString()+' years';}
+function ch5(u){const C=cam(u),k=C.k,S={x:C.E.x-EW.x*k,y:C.E.y-EW.y*k},P=(x,y)=>({x:S.x+x*k,y:S.y+y*k}),on=(q,m=60)=>q.x>-m&&q.x<VW+m&&q.y>-m&&q.y<VH+m;
  // galaxy
  const gR=GALR*k;if(gR<30000){const al=1-ramp(Math.log10(gR),3.3,4.2);if(al>0){const g=P(GALC.x,GALC.y);cx.globalAlpha=al;cx.drawImage(GAL,g.x-gR,g.y-gR,2*gR,2*gR);cx.globalAlpha=1;}}
  // Oort cloud
  const R5=Math.log10(100000*k),oa=(1-ramp(R5,3.6,4.4))*ramp(R5,0.3,1.2);
- if(oa>0)OORT.forEach(o=>{const q=P(o[0],o[1]);if(q.x<-5||q.x>VW+5||q.y<-5||q.y>VH+5)return;cx.fillStyle='rgba(170,210,255,'+(0.25+0.45*o[2])*oa+')';cx.fillRect(q.x,q.y,1.6,1.6);});
- // planets' orbits and Voyager's 1-light-day circle
- cx.lineWidth=1;ORB.forEach(o=>{const r=o[1]*k;if(r>2){cx.strokeStyle='rgba(140,170,210,'+Math.min(0.3,r/40)+')';cx.beginPath();cx.arc(S.x,S.y,r,0,7);cx.stroke();}});
- const vr=173.1*k;if(vr>4){cx.setLineDash([6,6]);cx.strokeStyle='rgba(242,165,65,'+Math.min(0.7,vr/30)+')';cx.lineWidth=2;cx.beginPath();cx.arc(S.x,S.y,vr,0,7);cx.stroke();cx.setLineDash([]);}
- sun(S.x,S.y,u<3?9:6);
- if(vr>40){const v=P(Math.cos(DIR)*173.1,Math.sin(DIR)*173.1);voyager(v.x,v.y,0.42);txt('Voyager 1',v.x,v.y-30,18,'#F2A541','center','bold',Math.min(1,(vr-40)/60));
-  if(vr>600)txt('Neptune’s orbit',S.x,S.y+30.07*k+22,15,'#8fb3d1','center','');}
+ if(oa>0)OORT.forEach(o=>{const q=P(o[0],o[1]);if(!on(q,5))return;cx.fillStyle='rgba(170,210,255,'+(0.25+0.45*o[2])*oa+')';cx.fillRect(q.x,q.y,1.6,1.6);});
+ // planets' orbits and the 1-light-day circle
+ cx.lineWidth=1;ORB.forEach(o=>{const r=o[1]*k;if(r>2&&r<20000){cx.strokeStyle='rgba(140,170,210,'+Math.min(0.3,r/40)+')';cx.beginPath();cx.arc(S.x,S.y,r,0,7);cx.stroke();}});
+ const vr=173.1*k;if(vr>4&&vr<40000){cx.setLineDash([6,6]);cx.strokeStyle='rgba(242,165,65,'+Math.min(0.7,vr/30)+')';cx.lineWidth=2;cx.beginPath();cx.arc(S.x,S.y,vr,0,7);cx.stroke();cx.setLineDash([]);}
+ // Sun
+ const sr=0.00465*k;if(sr<3000&&on(S,sr+200)){if(sr>8){const g=cx.createRadialGradient(S.x,S.y,0,S.x,S.y,sr*1.6);g.addColorStop(0,'#fff6d8');g.addColorStop(0.55,'#ffcf5a');g.addColorStop(0.62,'rgba(255,170,40,0.6)');g.addColorStop(1,'rgba(255,140,20,0)');cx.fillStyle=g;cx.beginPath();cx.arc(S.x,S.y,sr*1.6,0,7);cx.fill();}else sun(S.x,S.y,u<22?9:6);
+  const sl=Math.min(ramp(u,10.5,11.5),1-ramp(u,19,20));if(sl>0)txt('Sun',S.x,S.y-Math.max(sr,10)-14,18,'#ffd27a','center','bold',sl);}
+ // Earth and Moon
+ const Eq=P(EW.x,EW.y),er=4.26e-5*k;if(on(Eq,er+40)&&u<24){if(er>9)earth(Eq.x,Eq.y,er);else{cx.fillStyle='#5aa8ff';cx.beginPath();cx.arc(Eq.x,Eq.y,Math.max(er,3.5),0,7);cx.fill();}
+  const el=1-ramp(u,14.6,15.4);if(u>1.5&&el>0)txt('Earth',Eq.x,Eq.y+Math.max(er,6)+(er>9?er*0.3+24:22),18,'#E8EEF5','center','bold',Math.min(el,ramp(u,1.5,2.2)));}
+ const Mq=P(MOONW.x,MOONW.y),mr=1.16e-5*k;if(on(Mq,mr+40)&&u>2.5&&u<16){const ma=Math.min(ramp(u,3.5,4.5),1-ramp(u,9,10));cx.globalAlpha=ma;
+  const g=cx.createRadialGradient(Mq.x-mr*0.3,Mq.y-mr*0.3,0,Mq.x,Mq.y,Math.max(mr,2.5));g.addColorStop(0,'#f1f1ee');g.addColorStop(1,'#8d8f94');cx.fillStyle=g;cx.beginPath();cx.arc(Mq.x,Mq.y,Math.max(mr,2.5),0,7);cx.fill();cx.globalAlpha=1;
+  txt('Moon',Mq.x,Mq.y+26,18,'#E8EEF5','center','bold',ma);
+  if(u>6&&u<8.8){const la=Math.min(ramp(u,6,6.6),1-ramp(u,8.3,8.8));cx.globalAlpha=la;cx.setLineDash([3,7]);cx.strokeStyle='#ffe08a';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(Eq.x+8,Eq.y);cx.lineTo(Mq.x-6,Mq.y);cx.stroke();cx.setLineDash([]);cx.globalAlpha=1;
+   txt('light: 1.3 seconds',(Eq.x+Mq.x)/2,Eq.y-16,18,'#ffe08a','center','bold',la);}}
+ if(u>12&&u<14.6){const la=Math.min(ramp(u,12,12.6),1-ramp(u,14,14.6));cx.globalAlpha=la;cx.setLineDash([3,7]);cx.strokeStyle='#ffe08a';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(S.x,S.y);cx.lineTo(Eq.x,Eq.y);cx.stroke();cx.setLineDash([]);cx.globalAlpha=1;
+  txt('sunlight: 8 min 20 s',(S.x+Eq.x)/2+70,(S.y+Eq.y)/2,18,'#ffe08a','left','bold',la);}
+ // Voyager 1
+ if(vr>40&&vr<40000){const v=P(Math.cos(DIR)*173.1,Math.sin(DIR)*173.1);if(on(v)){voyager(v.x,v.y,0.42);txt('Voyager 1',v.x,v.y-30,18,'#F2A541','center','bold',Math.min(1,(vr-40)/60));}
+  if(vr>600&&vr<3000)txt('Neptune’s orbit',S.x,S.y+30.07*k+22,15,'#8fb3d1','center','');}
  if(vr<=40){const al=1-ramp(vr,15,40);cx.globalAlpha=al;cx.strokeStyle='#F2A541';cx.lineWidth=2;cx.beginPath();cx.arc(S.x,S.y,13,0,7);cx.stroke();cx.globalAlpha=1;
-  const lab=gR<3000?'You are here. The Sun, all the planets, and Voyager 1 fit inside this circle, with lots of room to spare.':'The Sun, the planets, and Voyager 1’s whole trip';
-  if(gR<3000)wrap(lab,S.x+20,S.y-60,330,18,24,'#F2A541','bold','left',al);else txt(lab,S.x+20,S.y-20,17,'#F2A541','left','bold',al);}
- // Oort label
- const ol=oa*(1-ramp(u,12.2,12.8));if(ol>0.05){const q=P(-70000,-22000);txt('Oort Cloud',q.x,q.y,24,'#aad2ff','center','bold',ol);txt('a giant shell of icy objects',q.x,q.y+26,17,'#8fb3d1','center','',ol);}
+  if(gR<3000)wrap('You are here. The Sun, all the planets, and Voyager 1 fit inside this circle, with lots of room to spare.',S.x+20,S.y-60,330,18,24,'#F2A541','bold','left',al);else txt('The Sun, the planets, and Voyager 1’s whole trip',S.x+20,S.y-20,17,'#F2A541','left','bold',al);}
+ const ol=oa*(1-ramp(u,30,30.6));if(ol>0.05){const q=P(-70000,-22000);txt('Oort Cloud',q.x,q.y,24,'#aad2ff','center','bold',ol);txt('a giant shell of icy objects',q.x,q.y+26,17,'#8fb3d1','center','',ol);}
  // Proxima Centauri
- const pq=P(Math.cos(PROX.ang)*PROX.r,Math.sin(PROX.ang)*PROX.r);if(pq.x<VW+50&&pq.x>-50){const pa=gR<3000?0:1;if(pa>0){const g=cx.createRadialGradient(pq.x,pq.y,0,pq.x,pq.y,14);g.addColorStop(0,'rgba(255,200,170,1)');g.addColorStop(0.3,'rgba(255,120,90,0.8)');g.addColorStop(1,'rgba(255,90,60,0)');cx.fillStyle=g;cx.beginPath();cx.arc(pq.x,pq.y,14,0,7);cx.fill();
-  txt('Proxima Centauri',pq.x,pq.y-26,20,'#ffb3a0','center','bold',ramp(u,12,13));txt('nearest star to the Sun',pq.x,pq.y+36,16,'#E8EEF5','center','',ramp(u,12,13));
-  if(u>12.5&&u<19){cx.setLineDash([3,8]);cx.strokeStyle='rgba(255,179,160,'+0.6*ramp(u,12.5,13.2)+')';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(S.x+16,S.y);cx.lineTo(pq.x-16,pq.y);cx.stroke();cx.setLineDash([]);
-   const m={x:(S.x+pq.x)/2,y:(S.y+pq.y)/2};txt('4.24 light-years = about 1,549 light-days',m.x,m.y-14,20,'#ffb3a0','center','bold',ramp(u,13,13.8));}}}
- if(gR<3000){const g=P(GALC.x,GALC.y);txt('The Milky Way galaxy',g.x,g.y+gR+36>VH-140?g.y-gR-16:g.y+gR+36,24,'#E8EEF5','center','bold',ramp(u,22,23));}
- panel(20,20,470,92);txt('THIS SCREEN IS ABOUT',44,50,14,'#8fb3d1','left','');txt(lightUnits(VW/k)+' wide',44,96,32,'#E8EEF5');
- if(u<3)caption('Zoom out','Voyager 1 is one light-day away, more than 5 times farther than Neptune. That is a record. Now let’s zoom out and see how it compares.');
- else if(u<7.5)caption('Zooming out...','The orange circle shows one light-day from the Sun. Watch it shrink.');
- else if(u<12)caption('The Oort Cloud','A huge shell of icy objects surrounds our solar system. Voyager 1 won’t reach it for about 300 years, and may need 30,000 years to get through it.');
- else if(u<18)caption('The nearest star','Proxima Centauri is 4.24 light-years away, about 1,549 light-days. Voyager 1 has gone 1 light-day.');
- else if(u<24)caption('Zooming out to the galaxy...','Each step out, Voyager’s whole journey shrinks to a smaller and smaller speck.');
- else caption('Our galaxy','The Milky Way is about 100,000 light-years across. On this scale, Voyager 1’s 49-year journey is far too small to see.');}
+ const pq=P(Math.cos(PROX.ang)*PROX.r,Math.sin(PROX.ang)*PROX.r);if(on(pq,50)&&gR>=3000){const g=cx.createRadialGradient(pq.x,pq.y,0,pq.x,pq.y,14);g.addColorStop(0,'rgba(255,200,170,1)');g.addColorStop(0.3,'rgba(255,120,90,0.8)');g.addColorStop(1,'rgba(255,90,60,0)');cx.fillStyle=g;cx.beginPath();cx.arc(pq.x,pq.y,14,0,7);cx.fill();
+  txt('Proxima Centauri',pq.x,pq.y-26,20,'#ffb3a0','center','bold',ramp(u,30.5,31.5));txt('nearest star to the Sun',pq.x,pq.y+36,16,'#E8EEF5','center','',ramp(u,30.5,31.5));
+  if(u>31&&u<36){cx.setLineDash([3,8]);cx.strokeStyle='rgba(255,179,160,'+0.6*ramp(u,31,31.6)+')';cx.lineWidth=1.5;cx.beginPath();cx.moveTo(S.x+16,S.y);cx.lineTo(pq.x-16,pq.y);cx.stroke();cx.setLineDash([]);
+   const m={x:(S.x+pq.x)/2,y:(S.y+pq.y)/2};txt('4.24 light-years = about 1,549 light-days',m.x,m.y-14,20,'#ffb3a0','center','bold',ramp(u,31.4,32.2));}}
+ if(gR<3000){const g=P(GALC.x,GALC.y);txt('The Milky Way galaxy',g.x,g.y+gR+36>VH-140?g.y-gR-16:g.y+gR+36,24,'#E8EEF5','center','bold',ramp(u,40,41));}
+ panel(20,20,520,92);txt('LIGHT CROSSES THIS SCREEN IN',44,50,14,'#8fb3d1','left','');txt(lightTime(VW/k),44,96,34,'#ffe08a');
+ if(u<2.5)caption('Start at home','Earth is about 7,900 miles wide. The box in the corner shows how long light takes to cross this screen. Watch it grow as we zoom out.');
+ else if(u<6)caption('Zooming out...','Leaving Earth behind.');
+ else if(u<8.5)caption('The Moon','About 30 Earths could fit in the gap between Earth and the Moon. Light crosses it in 1.3 seconds. The Artemis II astronauts took about 3 days.');
+ else if(u<12)caption('Zooming out...','Earth and the Moon shrink to dots.');
+ else if(u<14.5)caption('The Sun','Sunlight takes 8 minutes and 20 seconds to reach Earth. The light you see from the Sun left it 8 minutes ago.');
+ else if(u<18.5)caption('Zooming out...','Past Jupiter, Saturn, Uranus, and Neptune.');
+ else if(u<22)caption('Voyager 1','The orange circle is one light-day from the Sun. Voyager 1 is out on that circle, more than 5 times farther than Neptune. That is a record. Keep zooming.');
+ else if(u<25.5)caption('Zooming out...','Watch Voyager’s orange circle shrink to a dot.');
+ else if(u<29)caption('The Oort Cloud','A huge shell of icy objects surrounds our solar system. Voyager 1 won’t reach it for about 300 years, and may need 30,000 years to get through it.');
+ else if(u<35)caption('The nearest star','Proxima Centauri is 4.24 light-years away, about 1,549 light-days. Voyager 1 has gone 1 light-day.');
+ else if(u<40)caption('Zooming out to the galaxy...','Each step out, Voyager’s whole journey shrinks to a smaller and smaller speck.');
+ else caption('Our galaxy','The Milky Way is about 100,000 light-years across. Light needs 100,000 years to cross it. On this scale, Voyager 1’s 49-year journey is far too small to see.');}
 // ---------- chapter 6: the Golden Record ----------
 // stylized Golden Record cover: three areas the cover explains
 function recordCover(x,y,r,a){cx.save();cx.translate(x,y);cx.globalAlpha=a;
@@ -319,39 +362,74 @@ function ch6(u){
    txt(c[0],826,y+34,24,'#ffd27a','left','bold',al);wrap(c[1],826,y+64,710,19,24,'#E8EEF5','','left',al);});
   caption('What is on the record?','The record holds pictures and sounds chosen to show what life on Earth is like. It comes with a cartridge and needle so it can be played.',a);}
  else{const v=u-28,a=ramp(v,0,0.6);recordDisc(430,400,280,(14+v)*2*Math.PI*(50/3)/60,0.35);
-  panel(760,150,800,470,0.9);cx.globalAlpha=a;
-  wrap('Voyager 1 would need about 40,000 years just to come close to another planetary system: another star with planets of its own.',800,220,720,30,40,'#E8EEF5','bold','left',a);
-  txt('THINK ABOUT IT',800,420,18,'#F2A541','left','bold',a);
-  wrap('If you could add one sound or one picture from today to the record, what would it be? Why would it help someone understand Earth?',800,465,720,26,36,'#E8EEF5','','left',a);cx.globalAlpha=1;
+  panel(760,70,800,680,0.92);cx.globalAlpha=a;
+  txt('RIGHT NOW',800,112,16,'#8fb3d1','left','bold',a);
+  const since=Math.max(0,(Date.now()-MILESTONE)/1000*MPS),page=(Date.now()-PAGE0)/1000*MPS;
+  txt(Math.floor(since).toLocaleString()+' miles',800,166,46,'#F2A541','left','bold',a);wrap('traveled since Voyager 1 passed one light-day on November 18.',800,198,720,19,24,'#E8EEF5','','left',a);
+  txt(Math.floor(page).toLocaleString()+' miles',800,262,34,'#ffe08a','left','bold',a);wrap('traveled since you opened this page. It moves about 10.6 miles every second.',800,290,720,19,24,'#E8EEF5','','left',a);
+  wrap('Voyager 1 would need about 40,000 years just to come close to another planetary system: another star with planets of its own.',800,370,720,24,32,'#E8EEF5','bold','left',a);
+  txt('THINK ABOUT IT',800,490,18,'#F2A541','left','bold',a);
+  wrap('If you could add one sound or one picture from today to the record, what would it be? Why would it help someone understand Earth?',800,530,720,25,34,'#E8EEF5','','left',a);cx.globalAlpha=1;
   caption('A message in a bottle','Voyager 1 is still traveling at about 38,000 mph, carrying its record farther from home every second.',a);}}
 // ---------- main draw ----------
 function draw(T){cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle='#070c18';cx.fillRect(0,0,W,H);
- stars.forEach(s=>{cx.fillStyle='rgba(255,255,255,'+(0.2+s[2]*0.3)+')';cx.fillRect(s[0]*W,s[1]*H,s[2],s[2]);});
+ const tw=performance.now()/1000;stars.forEach(s=>{cx.fillStyle='rgba(255,255,255,'+(0.2+s[2]*0.3)*(0.65+0.35*Math.sin(tw*s[4]+s[3]))+')';cx.fillRect(s[0]*W,s[1]*H,s[2],s[2]);});
  cx.setTransform(dpr*f,0,0,dpr*f,dpr*ox,dpr*oy);
  const i=CH.findIndex(c=>T<c.b),k=i<0?CH.length-1:i,u=T-CH[k].a;
  [ch1,ch2,ch3,ch4,ch5,ch6][k](u);
  chBtns.forEach((b,j)=>b.classList.toggle('on',j==k));}
+// ---------- sound (made in the browser, no audio files) ----------
+let AC=null,master=null,soundOn=true;
+function initAudio(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return;}master=AC.createGain();master.gain.value=soundOn?0.9:0;master.connect(AC.destination);
+ const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=420;lp.connect(master);const pg=AC.createGain();pg.gain.value=0.05;pg.connect(lp);
+ [55,82.41,110,164.81].forEach((fq,i)=>{const o=AC.createOscillator();o.type=i%2?'triangle':'sine';o.frequency.value=fq;o.detune.value=(i-1.5)*5;const g=AC.createGain();g.gain.value=i<2?0.8:0.35;o.connect(g);g.connect(pg);o.start();
+  const l=AC.createOscillator();l.frequency.value=0.05+i*0.031;const lg=AC.createGain();lg.gain.value=0.3;l.connect(lg);lg.connect(g.gain);l.start();});}
+function tone(fq,dur=0.6,vol=0.12,type='sine',when=0){if(!AC||!soundOn)return;const t=AC.currentTime+when,o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=fq;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+0.05);}
+const chime=()=>[523.25,659.25,783.99,1046.5].forEach((fq,i)=>tone(fq,1.8,0.06,'sine',i*0.1));
+const ping=()=>{tone(880,0.5,0.07);tone(1318.5,0.7,0.04,'sine',0.08);};
+const beep=()=>{tone(1200,0.1,0.05,'square');tone(1200,0.1,0.05,'square',0.16);tone(1600,0.14,0.05,'square',0.32);};
+const tick=()=>tone(1568,0.25,0.05);
+function whoosh(d){if(!AC||!soundOn)return;const n=Math.floor(AC.sampleRate*d),bf=AC.createBuffer(1,n,AC.sampleRate),ch=bf.getChannelData(0);for(let i=0;i<n;i++)ch[i]=Math.random()*2-1;
+ const src=AC.createBufferSource();src.buffer=bf;const fl=AC.createBiquadFilter();fl.type='bandpass';fl.Q.value=0.9;const t=AC.currentTime;fl.frequency.setValueAtTime(2200,t);fl.frequency.exponentialRampToValueAtTime(140,t+d);
+ const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.16,t+d*0.35);g.gain.linearRampToValueAtTime(0,t+d);src.connect(fl);fl.connect(g);g.connect(master);src.start(t);src.stop(t+d);}
+const CUES=[[17,chime],[CH[1].a+21,chime],[CH[2].a+2,beep],[CH[2].a+10,ping],[CH[2].a+12,beep],[CH[2].a+20,ping],[CH[3].a+3,tick],[CH[3].a+14,chime],[CH[5].a+0.2,chime]];
+LT.forEach(l=>CUES.push([CH[1].a+3+l[1]*0.138617/24*18,tick]));
+ZOOMS.forEach((z,i)=>CUES.push([CH[4].a+z,()=>whoosh(ZK.find(q=>q[0]>z)[0]-z+0.4)]));
+// ---------- predictions (shown at the start of a chapter; the animation waits) ----------
+const PRED={1:{q:'How long does sunlight take to reach Voyager 1?',o:['1 second','1 hour','1 day','1 year']},
+ 2:{q:'You send Voyager 1 a message. How long until its answer gets back to you?',o:['A few seconds','A few hours','2 days','2 months']},
+ 3:{q:'Light makes the trip from Earth to Voyager 1 in 1 day. How long did Voyager 1 take?',o:['1 month','1 year','10 years','49 years']},
+ 4:{q:'Voyager 1 is the farthest thing we have ever sent. How much of the way to the nearest star has it gone?',o:['About half','About 1/10','Less than 1/1,000']}};
+const prEl=document.getElementById('pred');let predOpen=false;
+function showPred(j){const p=PRED[j];if(!p)return false;prEl.querySelector('h2').textContent=p.q;const box=prEl.querySelector('.opts');box.innerHTML='';
+ p.o.forEach((o,i)=>{const b=document.createElement('button');b.textContent=String.fromCharCode(65+i)+'.  '+o;b.onclick=()=>{box.querySelectorAll('button').forEach(x=>x.classList.remove('pick'));b.classList.add('pick');tick();};box.appendChild(b);});
+ prEl.classList.add('on');predOpen=true;ping();return true;}
+function hidePred(){prEl.classList.remove('on');predOpen=false;}
 // ---------- controls ----------
-const chapEl=document.getElementById('chap'),chBtns=CH.map((c,j)=>{const b=document.createElement('button');b.textContent=c.n;b.onclick=()=>{T=c.a;setPlay(true);};chapEl.appendChild(b);return b;});
+const chapEl=document.getElementById('chap'),chBtns=CH.map((c,j)=>{const b=document.createElement('button');b.textContent=c.n;b.onclick=()=>{T=c.a;hold=-1;hidePred();if(showPred(j))setPlay(false);else setPlay(true);};chapEl.appendChild(b);return b;});
 fit();let T=0,playing=true,last=performance.now(),hold=-1;
-const pb=document.getElementById('play'),sr=document.getElementById('scrub'),tm=document.getElementById('time');
+const pb=document.getElementById('play'),sr=document.getElementById('scrub'),tm=document.getElementById('time'),sb=document.getElementById('snd');
 function setPlay(v){playing=v;pb.textContent=v?'Pause':'Play';last=performance.now();}
-pb.onclick=()=>{if(!playing&&T>=TOTAL-0.01)T=0;if(!playing&&hold>=0){T=hold;hold=-1;}setPlay(!playing);};
-document.getElementById('again').onclick=()=>{T=0;hold=-1;setPlay(true);};
-sr.oninput=()=>{T=+sr.value;hold=-1;setPlay(false);};
+pb.onclick=()=>{hidePred();if(!playing&&T>=TOTAL-0.01)T=0;if(!playing&&hold>=0){T=hold;hold=-1;}setPlay(!playing);};
+document.getElementById('go').onclick=()=>pb.click();
+document.getElementById('again').onclick=()=>{T=0;hold=-1;hidePred();setPlay(true);};
+sr.oninput=()=>{T=+sr.value;hold=-1;hidePred();setPlay(false);};
+sb.onclick=()=>{soundOn=!soundOn;initAudio();if(AC){AC.resume();master.gain.value=soundOn?0.9:0;}sb.textContent='Sound: '+(soundOn?'On':'Off');};
 document.getElementById('fs').onclick=()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();};
-addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();pb.click();}});
+addEventListener('pointerdown',()=>{initAudio();AC&&AC.resume();},{capture:true});
+addEventListener('keydown',e=>{initAudio();AC&&AC.resume();if(e.code==='Space'){e.preventDefault();pb.click();}});
 const phEl=document.getElementById('photo'),bigEl=document.getElementById('big'),galEl=document.getElementById('gal');let phNow=-1;
 function showPhoto(t){const i=PHOTOS.findIndex(p=>t>=p.a&&t<p.b);if(i===phNow)return;phNow=i;
- if(i<0){phEl.classList.remove('on');return;}const ph=PHOTOS[i],im=phEl.querySelector('img');let n=0;
- phEl.querySelector('.tag').textContent=ph.a>=122?'PHOTO FROM NASA':'PHOTO TAKEN BY VOYAGER 1';
- im.style.display='';im.onerror=()=>{n++;if(n<ph.src.length){im.src=ph.src[n];return;}im.style.display='none';phEl.querySelector('.cap').textContent=ph.c+' (Photo did not load. Search \u201c'+ph.id+'\u201d at photojournal.jpl.nasa.gov.)';};im.src=ph.src[0];im.alt=ph.t;
- phEl.querySelector('h3').textContent=ph.t;phEl.querySelector('.cap').textContent=ph.c;phEl.querySelector('.cr').textContent='NASA/JPL-Caltech \u00b7 '+ph.id+' \u00b7 click to enlarge';phEl.classList.add('on');}
+ if(i<0){phEl.classList.remove('on');return;}const ph=PHOTOS[i],im=phEl.querySelector('img');let n=0;if(playing)ping();
+ phEl.querySelector('.tag').textContent=ph.a>=CH[5].a?'PHOTO FROM NASA':'PHOTO TAKEN BY VOYAGER 1';
+ im.style.display='';im.onerror=()=>{n++;if(n<ph.src.length){im.src=ph.src[n];return;}im.style.display='none';phEl.querySelector('.cap').textContent=ph.c+' (Photo did not load. Search “'+ph.id+'” at photojournal.jpl.nasa.gov.)';};im.src=ph.src[0];im.alt=ph.t;
+ phEl.querySelector('h3').textContent=ph.t;phEl.querySelector('.cap').textContent=ph.c;phEl.querySelector('.cr').textContent='NASA/JPL-Caltech · '+ph.id+' · click to enlarge';phEl.classList.add('on');}
 phEl.onclick=()=>{if(phNow<0)return;const ph=PHOTOS[phNow];bigEl.querySelector('img').src=phEl.querySelector('img').src;bigEl.querySelector('p').textContent=ph.t+': '+ph.c+' (NASA/JPL-Caltech)';bigEl.classList.add('on');setPlay(false);};
 bigEl.onclick=()=>bigEl.classList.remove('on');
 function showLink(t){const on=t>=CH[5].a+15&&t<CH[5].a+28;galEl.style.display=on?'block':'none';if(on){galEl.style.left=(ox+826*f)+'px';galEl.style.top=(oy+732*f)+'px';galEl.style.fontSize=Math.max(12,18*f)+'px';}}
 function loop(now){showPhoto(T);showLink(T);if(playing){const ph=PHOTOS.find(p=>T>=p.a&&T<p.b);const nT=T+(now-last)/1000*(ph?(ph.b-ph.a)/6.5:1);const end=CH.find(c=>T<c.b&&nT>=c.b&&c.b<TOTAL);
-  if(end){T=end.b-0.001;hold=end.b;setPlay(false);}else{T=nT;if(T>=TOTAL){T=TOTAL-0.001;setPlay(false);}}}
+  CUES.forEach(c=>{if(T<c[0]&&Math.min(nT,end?end.b:nT)>=c[0])c[1]();});
+  if(end){T=end.b-0.001;hold=end.b;setPlay(false);showPred(CH.indexOf(end)+1);}else{T=nT;if(T>=TOTAL){T=TOTAL-0.001;setPlay(false);}}}
  last=now;draw(T);sr.value=T;tm.textContent=T.toFixed(1)+' s';requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 </script></body></html>
