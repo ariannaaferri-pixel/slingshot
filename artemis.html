@@ -9,34 +9,52 @@ html,body{margin:0;height:100%;background:#070c18;overflow:hidden;font-family:Ar
 #bar button.alt{background:transparent;color:#E8EEF5;border:1px solid #3FA7D6}
 #scrub{flex:1;min-width:60px;accent-color:#F2A541}
 #time{font:14px monospace;min-width:84px;text-align:right}
+#photo{position:absolute;left:50%;margin-left:min(-180px,-21vw);top:76px;width:min(360px,42vw);background:rgba(11,20,36,0.94);border:1px solid #3FA7D6;border-radius:10px;padding:10px;box-sizing:border-box;opacity:0;transform:translateY(-8px);transition:opacity .4s,transform .4s;pointer-events:none;cursor:zoom-in}
+#photo.on{opacity:1;transform:none;pointer-events:auto}
+#photo .tag{font:bold 12px Arial;color:#F2A541;letter-spacing:.04em;margin-bottom:6px}
+#photo img{display:block;width:100%;height:auto;max-height:38vh;object-fit:cover;border-radius:6px;background:#000}
+#photo h3{margin:8px 0 4px;font-size:17px}
+#photo p{margin:0;font-size:14px;line-height:1.35;color:#c9d6e3}
+#photo .cr{margin-top:6px;font-size:11px;color:#8fb3d1}
+#big{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;flex-direction:column;padding:16px;box-sizing:border-box;z-index:5;cursor:zoom-out}
+#big.on{display:flex}#big img{max-width:100%;max-height:80vh;border-radius:6px}#big p{max-width:900px;text-align:center;font-size:17px;line-height:1.4;color:#E8EEF5}
 </style></head><body>
 <canvas id="c"></canvas>
+<div id="photo"><div class="tag">PHOTO FROM ARTEMIS II</div><img alt=""><h3></h3><p class="cap"></p><div class="cr"></div></div>
+<div id="big"><img alt=""><p></p></div>
 <div id="bar"><button id="play">Pause</button><button id="again" class="alt">Replay</button><button id="lab" class="alt">Labels: Off</button><input id="scrub" type="range" min="0" max="38" step="0.01" value="0" aria-label="Timeline"><span id="time">0.0 s</span><button id="fs" class="alt">Full screen</button></div>
 <script>
 // ---------- path (same shape as the worksheet map) ----------
 const SX=0.6, E={x:330*SX,y:420}, MO={x:1480*SX,y:420}, ER=34, MR=30*SX*1.2, D2R=Math.PI/180;
 function cub(q,n){const o=[];for(let i=0;i<=n;i++){const u=i/n,a=(1-u)**3,c=3*(1-u)**2*u,d=3*(1-u)*u*u,e=u**3;o.push({x:a*q[0].x+c*q[1].x+d*q[2].x+e*q[3].x,y:a*q[0].y+c*q[1].y+d*q[2].y+e*q[3].y});}return o;}
+// globe view: centered on North America, so Florida (launch) and the Pacific off San Diego (splashdown) both face us
+const GLON0=-98*D2R, GLAT0=22*D2R;
+function gxy(lon,lat){lon*=D2R;lat*=D2R;const dl=lon-GLON0;return{x:Math.cos(lat)*Math.sin(dl),y:Math.cos(GLAT0)*Math.sin(lat)-Math.sin(GLAT0)*Math.cos(lat)*Math.cos(dl)};}
+function gpt(lon,lat){const q=gxy(lon,lat);return{x:E.x+q.x*ER,y:E.y-q.y*ER};}
+const FLA=gpt(-80.6,28.5), SDG=gpt(-119.5,31.5);
 const P=[],idx={};
 // checkout orbit: an ellipse with Earth at one focus (closest point on the right, farthest point on the left)
 const RP=56, RA=157, OA=(RP+RA)/2, OC=OA-RP, OB=Math.sqrt(OA*OA-OC*OC), OE=OC/OA, OX=E.x-OC;
 const orb=th=>({x:OX+OA*Math.cos(th),y:E.y-OB*Math.sin(th)});
-const TH0=70*D2R, NORB=320;
-// launch: straight up off the surface, then tip over into orbit
-const LA=80*D2R, L0={x:E.x+ER*Math.cos(LA),y:E.y-ER*Math.sin(LA)}, J=orb(TH0);
+const TH0=45*D2R, NORB=320;
+// launch: from Florida, up and away from Earth, then tip over into orbit
+const L0=FLA, J=orb(TH0);
 const tj=(()=>{const vx=-OA*Math.sin(TH0),vy=-OB*Math.cos(TH0),m=Math.hypot(vx,vy);return{x:vx/m,y:vy/m};})();
-cub([L0,{x:L0.x+Math.cos(LA)*20,y:L0.y-Math.sin(LA)*20},{x:J.x-tj.x*18,y:J.y-tj.y*18},J],40).forEach(q=>P.push(q));
+cub([L0,{x:L0.x+10,y:L0.y-20},{x:J.x-tj.x*18,y:J.y-tj.y*18},J],50).forEach(q=>P.push(q));
 idx.launchEnd=P.length-1;idx.orb0=idx.launchEnd;
 // one trip around Earth (counterclockwise on screen), ending at the closest point, where the engine fires
 for(let i=1;i<=NORB;i++)P.push(orb(TH0+(2*Math.PI-TH0)*i/NORB));
 idx.tli=P.length-1;
 // after the burn: swing past Earth, out to the Moon, around the far side, and home
-const peri=P[idx.tli], SPL={x:E.x+ER*Math.cos(70*D2R),y:E.y+ER*Math.sin(70*D2R)};
+const peri=P[idx.tli], SPL=SDG, ENT={x:E.x+44,y:E.y+18};
 const B=[
  [peri,{x:peri.x,y:330},{x:540,y:215},{x:756,y:480}],
  [{x:756,y:480},{x:840,y:590},{x:990,y:580},{x:1008,y:420}],
  [{x:1008,y:420},{x:1026,y:260},{x:876,y:250},{x:756,y:370}],
- [{x:756,y:370},{x:560,y:630},{x:SPL.x+150,y:SPL.y+6},SPL]];
-B.forEach((b,k)=>{const s=cub(b,k==0||k==3?260:140);s.shift();s.forEach(q=>P.push(q));if(k==0)idx.out=P.length-1;if(k==2)idx.flyEnd=P.length-1;});
+ [{x:756,y:370},{x:560,y:630},{x:ENT.x+60,y:ENT.y+34},ENT],
+ // reentry: down through the atmosphere to splashdown in the Pacific
+ [ENT,{x:ENT.x-17,y:ENT.y-9.6},{x:SPL.x+14,y:SPL.y+3},SPL]];
+B.forEach((b,k)=>{const s=cub(b,k==0||k==3?260:k==4?60:140);s.shift();s.forEach(q=>P.push(q));if(k==0)idx.out=P.length-1;if(k==2)idx.flyEnd=P.length-1;if(k==3)idx.entry=P.length-1;});
 idx.end=P.length-1;
 // cumulative length
 const L=[0];for(let i=1;i<P.length;i++)L.push(L[i-1]+Math.hypot(P[i].x-P[i-1].x,P[i].y-P[i-1].y));
@@ -64,7 +82,7 @@ const TOTAL=38;
 // coasting speed profile: slows on the way out, small boost near the Moon, speeds up all the way home
 const g=t=>0.22+GA*Math.exp(-(t-TC0)/2.6)+0.18*Math.exp(-Math.pow((t-22.5)/1.8,2))+(t>23.5?1.15*Math.pow((t-23.5)/9,2):0);
 let CT=[];function buildCT(){CT=[0];let acc=0;for(let t=TC0;t<32.5;t+=0.01){acc+=g(t)*0.01;CT.push(acc);}}
-let cS0=0;const cS1=sAt(idx.end)-6;
+let cS0=0;const cS1=sAt(idx.entry);
 // pick the burn length and coast profile so speed is continuous: orbit -> burn (speeds up) -> coast
 {const VC=V0*1.35;BD=(VC+V0)*TBT/2;cS0=sAt(idx.tli)+BD;let lo=0,hi=30;
  for(let k=0;k<40;k++){GA=(lo+hi)/2;buildCT();const v=(cS1-cS0)*g(TC0)/CT[CT.length-1];if(v<VC)lo=GA;else hi=GA;}buildCT();}
@@ -82,8 +100,21 @@ function coast(t){const i=Math.min(CT.length-1,Math.max(0,Math.round((t-TC0)/0.0
 function sOf(t){for(const k of K){if(t<=k[1]){if(k[4]=='coast')return coast(t);const u0=Math.max(0,Math.min(1,(t-k[0])/(k[1]-k[0])));if(k[4]=='kepler')return kep(u0);if(k[4]=='burn'){const T=k[1]-k[0],tau=u0*T;return k[2]+V0*tau+(BD-V0*T)*u0*u0;}const u=Math.max(0,Math.min(1,(t-k[0])/(k[1]-k[0])));return k[2]+(k[3]-k[2])*ease[k[4]](u);}}return L[L.length-1];}
 function tWhen(sv){for(let t=TC0;t<32.5;t+=0.01)if(coast(t)>=sv)return t;return 32.5;}
 const tF0=tWhen(sFly0),tF1=tWhen(sFly1);
+// ---------- far side photos (real NASA images taken by the Artemis II crew, April 6, 2026) ----------
+function isBlocked(p,t){const dx=p.x-E.x,dy=p.y-E.y,len=Math.hypot(dx,dy),u=((MO.x-E.x)*dx+(MO.y-E.y)*dy)/(len*len);
+ const cxp=E.x+dx*u,cyp=E.y+dy*u;return u>0&&u<1&&Math.hypot(MO.x-cxp,MO.y-cyp)<MR*2.0&&t>12;}
+let tB0=0,tB1=0;for(let t=12;t<32;t+=0.01){const b=isBlocked(posAt(sOf(t)),t);if(b&&!tB0)tB0=t;if(b)tB1=t;}
+const NI=id=>'https://images-assets.nasa.gov/image/'+id+'/'+id+'~large.jpg';
+const PH=[
+ {id:'art002e009289',t:'Earthset',c:'Earth sets behind the Moon. The crew took this about three minutes before Orion went behind the Moon and lost radio contact.'},
+ {id:'art002e009282',t:'Vavilov Crater',c:'Long shadows near the line between day and night make the craters stand out. Vavilov Crater sits on the rim of the older, larger Hertzsprung basin.'},
+ {id:'art002e009283',t:'South Pole-Aitken Basin',c:'Heavily cratered ground at the edge of the South Pole-Aitken basin, the largest and oldest impact basin on the Moon.'},
+ {id:'art002e009280b',t:'Earthrise',c:'Earth comes back into view through Orion\u2019s window. With Earth in sight again, radio contact returns.'},
+ {id:'art002e009301',t:'Solar Eclipse',c:'From behind the Moon, the crew watched the Moon completely block the Sun. The eclipse lasted almost 54 minutes.'}];
+{const mid=(tB0+tB1)/2,w=2.4;const win=[[tB0-w,tB0],[tB0,mid],[mid,tB1],[tB1,tB1+w],[tB1+w,tB1+2*w]];PH.forEach((ph,i)=>{ph.a=win[i][0];ph.b=win[i][1];ph.img=new Image();ph.img.src=NI(ph.id);});}
+const PHA=PH[0].a,PHB=PH[PH.length-1].b;
 // calendar: April 1 launch, April 2 burn, April 6 flyby, April 10 splashdown
-function dayOf(t){const pts=[[0,1],[5.5,1],[10.5,2],[(tF0+tF1)/2,6],[33.6,10]];if(t>=33.6)return 10;for(let i=1;i<pts.length;i++)if(t<=pts[i][0]){const a=pts[i-1],b=pts[i];return Math.floor(a[1]+(b[1]-a[1])*(t-a[0])/(b[0]-a[0]));}return 10;}
+function dayOf(t){const pts=[[0,1],[5.5,1],[10.5,2],[tB0-2.4,6],[tB1+4.8,6.99],[33.6,10]];if(t>=33.6)return 10;for(let i=1;i<pts.length;i++)if(t<=pts[i][0]){const a=pts[i-1],b=pts[i];return Math.floor(a[1]+(b[1]-a[1])*(t-a[0])/(b[0]-a[0]));}return 10;}
 // captions (box number + event), matching the worksheet events in order
 const CAP=[
  [0,3,null,'Artemis II: Around the Moon and Back','Follow Orion, the spacecraft carrying four astronauts.'],
@@ -96,7 +127,7 @@ const CAP=[
  [32.5,38,6,'Splashdown','Orion splashes down in the Pacific Ocean on April 10.']];
 // ---------- Earth: a small globe (Americas facing us, since Orion launches from Florida) ----------
 const GLOBE=(()=>{const N=520,g=document.createElement('canvas');g.width=g.height=N;const c=g.getContext('2d'),R=N/2-1,C=N/2;
- const lon0=-80*D2R,lat0=20*D2R;
+ const lon0=GLON0,lat0=GLAT0;
  function pr(lon,lat){lon*=D2R;lat*=D2R;const dl=lon-lon0;let x=Math.cos(lat)*Math.sin(dl),y=Math.cos(lat0)*Math.sin(lat)-Math.sin(lat0)*Math.cos(lat)*Math.cos(dl);
   if(Math.sin(lat0)*Math.sin(lat)+Math.cos(lat0)*Math.cos(lat)*Math.cos(dl)<0){const m=Math.hypot(x,y)||1;x/=m;y/=m;}return[C+x*R,C-y*R];}
  function vis(lon,lat){lon*=D2R;lat*=D2R;return Math.sin(lat0)*Math.sin(lat)+Math.cos(lat0)*Math.cos(lat)*Math.cos(lon-lon0);}
@@ -152,6 +183,53 @@ const GLOBE=(()=>{const N=520,g=document.createElement('canvas');g.width=g.heigh
  // thin blue atmosphere at the edge
  gr=c.createRadialGradient(C,C,R*0.82,C,C,R);gr.addColorStop(0,'rgba(120,190,255,0)');gr.addColorStop(1,'rgba(150,205,255,0.55)');c.fillStyle=gr;c.fillRect(0,0,N,N);
  c.restore();return g;})();
+// ---------- spacecraft drawings ----------
+function flame(x0,len,w,t){const f=len*(0.85+0.15*Math.sin(t*37));const g=cx.createLinearGradient(x0,0,x0-f,0);g.addColorStop(0,'rgba(255,250,220,0.95)');g.addColorStop(0.35,'rgba(255,180,60,0.85)');g.addColorStop(1,'rgba(255,90,20,0)');
+ cx.fillStyle=g;cx.beginPath();cx.moveTo(x0,-w);cx.quadraticCurveTo(x0-f*0.5,-w*1.3,x0-f,0);cx.quadraticCurveTo(x0-f*0.5,w*1.3,x0,w);cx.closePath();cx.fill();}
+function crewModule(){ // cone with the heat shield at x=0, nose pointing +x
+ let g=cx.createLinearGradient(0,-7,0,7);g.addColorStop(0,'#eef1f4');g.addColorStop(0.55,'#b9c0c8');g.addColorStop(1,'#7d8692');
+ cx.fillStyle=g;cx.beginPath();cx.moveTo(0,-7);cx.lineTo(9,-2.6);cx.lineTo(9,2.6);cx.lineTo(0,7);cx.closePath();cx.fill();
+ cx.fillStyle='#9aa2ac';cx.fillRect(9,-1.6,1.6,3.2);
+ cx.fillStyle='#1c2430';cx.fillRect(3.2,-4.3,1.6,1.4); // window
+ cx.fillStyle='#6b4a33';cx.fillRect(-1.1,-7,1.3,14);} // heat shield
+function wing(ang,len,alpha){cx.save();cx.rotate(ang);cx.globalAlpha=alpha;
+ cx.fillStyle='#c9a64a';cx.fillRect(0,-0.5,2,1);
+ for(let k=0;k<3;k++){const x=2+k*len/3;cx.fillStyle='#1d3d82';cx.fillRect(x,-2.4,len/3-0.8,4.8);cx.fillStyle='rgba(120,170,255,0.35)';cx.fillRect(x,-2.4,len/3-0.8,1.2);}
+ cx.restore();}
+function orion(dep,t,burn){ // crew module + European Service Module + 4 solar array wings (X shape)
+ const L=16*dep;
+ cx.save();cx.translate(-11,0);wing(-Math.PI/2-0.35,L*0.6,0.55);wing(Math.PI/2+0.35,L*0.6,0.55);cx.restore();
+ if(burn)flame(-21,22,3.2,t);
+ cx.fillStyle='#4a4f57';cx.beginPath();cx.moveTo(-17,-1.6);cx.lineTo(-21.5,-3.6);cx.lineTo(-21.5,3.6);cx.lineTo(-17,1.6);cx.closePath();cx.fill();
+ let g=cx.createLinearGradient(0,-6.5,0,6.5);g.addColorStop(0,'#f4f5f6');g.addColorStop(0.6,'#c7ccd2');g.addColorStop(1,'#8f969f');
+ cx.fillStyle=g;cx.fillRect(-17,-6.5,13.5,13);
+ cx.fillStyle='rgba(200,160,70,0.85)';cx.fillRect(-12.5,-6.5,1.6,13);cx.fillStyle='rgba(120,128,138,0.6)';cx.fillRect(-8,-6.5,0.8,13);
+ cx.fillStyle='#d3d7dc';cx.fillRect(-3.5,-6.8,2.6,13.6); // adapter between modules
+ cx.save();cx.translate(-0.9,0);crewModule();cx.restore();
+ cx.save();cx.translate(-11,0);wing(-Math.PI/2+0.2,L,1);wing(Math.PI/2-0.2,L,1);cx.restore();}
+function sls(t,fire){ // Space Launch System: orange core stage, two white boosters, Orion on top
+ if(fire){flame(-27,26,4.5,t);cx.save();cx.translate(0,-5.2);flame(-29,22,2.4,t+1);cx.restore();cx.save();cx.translate(0,5.2);flame(-29,22,2.4,t+2);cx.restore();}
+ cx.fillStyle='#e07a2e';cx.fillRect(-27,-3.4,34,6.8);cx.fillStyle='rgba(0,0,0,0.18)';cx.fillRect(-27,1.2,34,2.2);
+ cx.fillStyle='#f2f2f2';[-5.2,5.2].forEach(y=>{cx.fillRect(-29,y-1.5,30,3);cx.beginPath();cx.moveTo(1,y-1.5);cx.lineTo(4.5,y);cx.lineTo(1,y+1.5);cx.fill();});
+ cx.fillStyle='#e9ecef';cx.fillRect(7,-2.8,6,5.6);
+ cx.fillStyle='#f4f5f6';cx.beginPath();cx.moveTo(13,-2.8);cx.lineTo(19,-1);cx.lineTo(19,1);cx.lineTo(13,2.8);cx.closePath();cx.fill();
+ cx.fillStyle='#bfc5cc';cx.fillRect(19,-0.5,6,1);}
+function capsule(heat){ // crew module alone, heat shield first
+ if(heat>0){const g=cx.createRadialGradient(-1,0,1,-1,0,16);g.addColorStop(0,'rgba(255,240,200,'+0.9*heat+')');g.addColorStop(0.4,'rgba(255,140,40,'+0.7*heat+')');g.addColorStop(1,'rgba(255,60,0,0)');
+  cx.fillStyle=g;cx.beginPath();cx.ellipse(-4,0,14,10,0,0,7);cx.fill();}
+ cx.save();cx.scale(-1,1);crewModule();cx.restore();}
+function drawCraft(t,p){
+ const u=Math.max(0.75,Math.min(1.35,sc))*0.95;
+ cx.save();cx.translate(X(p.x),Y(p.y));
+ if(t<5.5){cx.rotate(p.a);cx.scale(u*0.5,u*0.5);sls(t,t>=3);}
+ else if(t<32.5){cx.rotate(p.a);cx.scale(u,u);orion(Math.max(0,Math.min(1,(t-5.7)/1.2)),t,t>=TB0&&t<TC0);}
+ else{const ch=Math.max(0,Math.min(1,(t-33.25)/0.3));
+  if(ch>0){cx.scale(u,u);cx.globalAlpha=Math.max(0,Math.min(1,(35.5-t)/0.8));
+   [[-9,-24],[0,-27],[9,-24]].forEach(c=>{cx.strokeStyle='rgba(230,230,230,0.8)';cx.lineWidth=0.6;cx.beginPath();cx.moveTo(0,-5);cx.lineTo(c[0]-5*ch,c[1]+3);cx.moveTo(0,-5);cx.lineTo(c[0]+5*ch,c[1]+3);cx.stroke();
+    cx.fillStyle='#e8542f';cx.beginPath();cx.ellipse(c[0],c[1],5.5*ch,4*ch,0,Math.PI,0);cx.fill();cx.fillStyle='#f4f4f4';cx.beginPath();cx.ellipse(c[0],c[1],5.5*ch,4*ch,0,Math.PI+1.05,Math.PI+2.1);cx.lineTo(c[0],c[1]);cx.fill();});
+   cx.globalAlpha=1;cx.rotate(Math.PI/2);capsule(0);}
+  else{cx.rotate(p.a);cx.scale(u,u);capsule(Math.min(1,(t-32.5)/0.25)*Math.max(0,1-(t-33.1)/0.3));}}
+ cx.restore();}
 // ---------- drawing ----------
 const cv=document.getElementById('c'),cx=cv.getContext('2d');let W=0,H=0,dpr=1,sc=1,ox=0,oy=0;
 const WB=(()=>{let a=1e9,b=-1e9,c=1e9,d=-1e9;P.forEach(q=>{a=Math.min(a,q.x);b=Math.max(b,q.x);c=Math.min(c,q.y);d=Math.max(d,q.y);});return{x0:a-40,x1:b+40,y0:c-40,y1:d+50};})();
@@ -165,33 +243,28 @@ function draw(t){
  const s=sOf(t),p=posAt(s),s2=sOf(Math.min(TOTAL,t+0.05)),spd=Math.abs(s2-s)/0.05;
  cx.fillStyle='#070c18';cx.fillRect(0,0,W,H);
  stars.forEach(st=>{cx.fillStyle='rgba(255,255,255,'+(0.25+st[2]*0.3)+')';cx.fillRect(st[0]*W,st[1]*H,st[2],st[2]);});
- // full route (dashed, like the worksheet map)
- cx.setLineDash([6,6]);cx.strokeStyle='rgba(120,160,200,0.35)';cx.lineWidth=1.5;cx.beginPath();P.forEach((q,i)=>i?cx.lineTo(X(q.x),Y(q.y)):cx.moveTo(X(q.x),Y(q.y)));cx.stroke();cx.setLineDash([]);
- // trail so far
- cx.strokeStyle='#F2A541';cx.lineWidth=3.5;cx.lineCap='round';cx.beginPath();
- for(let i=0;i<=p.i;i++){const q=P[i];i?cx.lineTo(X(q.x),Y(q.y)):cx.moveTo(X(q.x),Y(q.y));}cx.lineTo(X(p.x),Y(p.y));cx.stroke();
  // Earth and Moon
  {const r=ER*sc,ex=X(E.x),ey=Y(E.y),gl=cx.createRadialGradient(ex,ey,r*0.9,ex,ey,r*1.32);
   gl.addColorStop(0,'rgba(110,180,255,0.55)');gl.addColorStop(0.35,'rgba(80,150,255,0.18)');gl.addColorStop(1,'rgba(60,120,255,0)');
   cx.fillStyle=gl;cx.beginPath();cx.arc(ex,ey,r*1.32,0,7);cx.fill();cx.drawImage(GLOBE,ex-r,ey-r,2*r,2*r);}
  cx.fillStyle='#cfd3da';cx.beginPath();cx.arc(X(MO.x),Y(MO.y),MR*sc,0,7);cx.fill();
+ // full route (dashed, like the worksheet map)
+ cx.setLineDash([6,6]);cx.strokeStyle='rgba(120,160,200,0.35)';cx.lineWidth=1.5;cx.beginPath();P.forEach((q,i)=>i?cx.lineTo(X(q.x),Y(q.y)):cx.moveTo(X(q.x),Y(q.y)));cx.stroke();cx.setLineDash([]);
+ // trail so far
+ cx.strokeStyle='#F2A541';cx.lineWidth=3.5;cx.lineCap='round';cx.beginPath();
+ for(let i=0;i<=p.i;i++){const q=P[i];i?cx.lineTo(X(q.x),Y(q.y)):cx.moveTo(X(q.x),Y(q.y));}cx.lineTo(X(p.x),Y(p.y));cx.stroke();
  cx.fillStyle='#E8EEF5';cx.font='bold '+Math.max(12,14*sc)+'px Arial';cx.textAlign='center';
  cx.fillText('Earth',X(E.x),Y(E.y)+ER*sc+18*sc+6);cx.fillText('Moon',X(MO.x),Y(MO.y)+MR*sc+18*sc+6);
  // signal check: is the Moon between Earth and Orion?
- const dx=p.x-E.x,dy=p.y-E.y,len=Math.hypot(dx,dy),u=((MO.x-E.x)*dx+(MO.y-E.y)*dy)/(len*len);
- const cxp=E.x+dx*u,cyp=E.y+dy*u,blocked=u>0&&u<1&&Math.hypot(MO.x-cxp,MO.y-cyp)<MR*2.0&&t>12;
+ const blocked=isBlocked(p,t);
  // radio line
  if(t>3&&t<33.6){cx.setLineDash([2,6]);cx.strokeStyle=blocked?'rgba(255,90,90,0.8)':'rgba(63,167,214,0.55)';cx.lineWidth=1.2;cx.beginPath();cx.moveTo(X(E.x),Y(E.y));cx.lineTo(X(p.x),Y(p.y));cx.stroke();cx.setLineDash([]);}
  // numbered markers (same numbers as the worksheet boxes)
  if(labels){CAP.forEach(c=>{if(c[2]==null)return;const b=BOX[c[2]-1],on=t>=c[0];
    cx.fillStyle=on?'#F2A541':'rgba(255,255,255,0.15)';cx.beginPath();cx.arc(X(b.x),Y(b.y),11,0,7);cx.fill();
    cx.fillStyle=on?'#0B1424':'rgba(255,255,255,0.5)';cx.font='bold 13px Arial';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(c[2],X(b.x),Y(b.y)+0.5);cx.textBaseline='alphabetic';});}
- // engine plume
- const burn=t>=TB0&&t<TC0;
- cx.save();cx.translate(X(p.x),Y(p.y));cx.rotate(p.a);
- if(burn||t<5.5&&t>=3){cx.fillStyle='rgba(255,170,60,'+(0.7+0.3*Math.sin(t*40))+')';cx.beginPath();cx.moveTo(-8,-5);cx.lineTo(-26-6*Math.sin(t*30),0);cx.lineTo(-8,5);cx.fill();}
- if(t<33.6||t>=33.6&&t<34.2){cx.fillStyle='#ffffff';cx.beginPath();cx.moveTo(10,0);cx.lineTo(-8,-6);cx.lineTo(-5,0);cx.lineTo(-8,6);cx.closePath();cx.fill();}
- cx.restore();
+ // spacecraft
+ drawCraft(t,p);
  if(t>=33.6){const k=(t-33.6);cx.strokeStyle='rgba(120,200,255,'+Math.max(0,1-k/2)+')';cx.lineWidth=2;cx.beginPath();cx.arc(X(p.x),Y(p.y),8+k*18,0,7);cx.stroke();}
  // ---- telemetry panel ----
  const mi=MILES(Math.hypot(p.x-E.x,p.y-E.y)),miles=t<12.5||mi<2000?'Near Earth':mi.toLocaleString(),rec=s>=sAt(farI);
@@ -230,6 +303,13 @@ lb.onclick=()=>{labels=!labels;lb.textContent='Labels: '+(labels?'On':'Off');};
 sr.oninput=()=>{T=+sr.value;setPlay(false);};
 document.getElementById('fs').onclick=()=>{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();};
 addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();pb.click();}});
-function loop(now){if(playing){T+=(now-last)/1000;if(T>=TOTAL){T=TOTAL;setPlay(false);}}last=now;draw(Math.min(T,TOTAL-0.001));sr.value=T;tm.textContent=T.toFixed(1)+' s';requestAnimationFrame(loop);}
+const phEl=document.getElementById('photo'),bigEl=document.getElementById('big');let phNow=-1;
+function showPhoto(t){const i=PH.findIndex(ph=>t>=ph.a&&t<ph.b);if(i===phNow)return;phNow=i;
+ if(i<0){phEl.classList.remove('on');return;}const ph=PH[i],im=phEl.querySelector('img');
+ let tries=0;im.style.display='';im.onerror=()=>{const alt=['~medium.jpg','~orig.jpg'];if(tries<alt.length){im.src=NI(ph.id).replace('~large.jpg',alt[tries++]);return;}im.style.display='none';phEl.querySelector('.cap').textContent=ph.c+' (Photo did not load. Search \u201c'+ph.id+'\u201d at images.nasa.gov.)';};im.src=NI(ph.id);im.alt=ph.t;
+ phEl.querySelector('h3').textContent=ph.t;phEl.querySelector('.cap').textContent=ph.c;phEl.querySelector('.cr').textContent='NASA photo '+ph.id+' \u00b7 click to enlarge';phEl.classList.add('on');}
+phEl.onclick=()=>{if(phNow<0)return;const ph=PH[phNow];bigEl.querySelector('img').src=phEl.querySelector('img').src;bigEl.querySelector('img').alt=ph.t;bigEl.querySelector('p').textContent=ph.t+': '+ph.c+' (NASA)';bigEl.classList.add('on');setPlay(false);};
+bigEl.onclick=()=>{bigEl.classList.remove('on');};
+function loop(now){showPhoto(Math.min(T,TOTAL-0.001));if(playing){const ph=PH.find(ph=>T>=ph.a&&T<ph.b);T+=(now-last)/1000*(ph?(ph.b-ph.a)/6.5:1);if(T>=TOTAL){T=TOTAL;setPlay(false);}}last=now;draw(Math.min(T,TOTAL-0.001));sr.value=T;tm.textContent=T.toFixed(1)+' s';requestAnimationFrame(loop);}
 requestAnimationFrame(loop);
 </script></body></html>
